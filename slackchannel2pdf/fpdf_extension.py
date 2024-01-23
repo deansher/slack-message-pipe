@@ -1,5 +1,9 @@
 """This module contains an extended FPDF class with rudimentary HTML support."""
 
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 import logging
 import os
 import re

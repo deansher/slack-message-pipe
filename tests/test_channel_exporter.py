@@ -1,3 +1,7 @@
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 import os
 import unittest
 from pathlib import Path

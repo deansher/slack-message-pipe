@@ -1,3 +1,7 @@
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 import configparser
 import pickle
 import tempfile

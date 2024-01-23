@@ -1,5 +1,9 @@
 """Main logic for exporting Slack channels."""
 
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 import datetime as dt
 import logging
 import logging.config

@@ -1,5 +1,9 @@
 """Logic for handling Slack API."""
 
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 import logging
 from typing import Optional
 

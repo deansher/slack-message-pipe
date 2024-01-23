@@ -1,5 +1,9 @@
 """Helpers for slackchannel2pdf."""
 
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 import html
 import json
 import logging

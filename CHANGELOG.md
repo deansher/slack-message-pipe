@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+######### All changes starting 2024 are MIT License, Copyright (c) Dean Thompson
+
+######### All changes until Jan 23, 2024 are MIT License, Copyright (c) 2019 Erik Kalkoken
+
 ## [1.5.2] - 2023-09-06
 
 ### Fixed

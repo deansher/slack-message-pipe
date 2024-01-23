@@ -1,5 +1,9 @@
 """Global settings incl. from configuration files for slackchannel2pdf."""
 
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 # pylint: disable = no-member
 
 import configparser

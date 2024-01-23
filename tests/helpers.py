@@ -1,3 +1,7 @@
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 import json
 import socket
 from pathlib import Path

@@ -1,5 +1,9 @@
 """Slack message transformers for slackchannel2pdf."""
 
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 import re
 
 from .helpers import transform_encoding

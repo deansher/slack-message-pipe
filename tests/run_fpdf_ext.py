@@ -1,3 +1,7 @@
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 from pathlib import Path
 
 from slackchannel2pdf.fpdf_extension import FPDFext

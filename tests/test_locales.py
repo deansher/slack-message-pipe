@@ -1,3 +1,7 @@
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 from unittest import TestCase
 from unittest.mock import patch
 

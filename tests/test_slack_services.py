@@ -1,3 +1,7 @@
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 from unittest.mock import patch
 
 from slackchannel2pdf.slack_service import SlackService

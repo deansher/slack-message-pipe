@@ -1,5 +1,9 @@
 """Command line interface."""
 
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 import argparse
 import os
 import sys

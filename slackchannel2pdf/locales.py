@@ -1,5 +1,9 @@
 """Locales for slackchannel2pdf."""
 
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 import datetime as dt
 import logging
 from typing import Optional

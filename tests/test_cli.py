@@ -1,3 +1,7 @@
+# MIT License
+#
+# Copyright (c) 2019 Erik Kalkoken
+
 import datetime as dt
 from argparse import Namespace
 from unittest import TestCase
