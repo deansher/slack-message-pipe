@@ -1,6 +1,7 @@
 # MIT License
 #
 # Copyright (c) 2019 Erik Kalkoken
+# Copyright (c) 2024 Dean Thompson
 
 import configparser
 import pickle
@@ -8,7 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from slackchannel2pdf import settings
+from slack-message-pipe import settings
 
 
 def deepcopy(config: configparser.ConfigParser) -> configparser.ConfigParser:

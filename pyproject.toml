@@ -3,21 +3,18 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "slackchannel2pdf"
+name = "slack-message-pipe"
 dynamic = ["version", "description"]
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.8"
-authors = [{ name = "Erik Kalkoken", email = "kalkoken87@gmail.com" }]
+requires-python = ">=3.10"
+authors = [{ name = "Dean Thompson", email = "deansherthompson@gmail.com" }]
 classifiers = [
     "Environment :: Console",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
@@ -29,13 +26,13 @@ dependencies = [
 ]
 
 [project.scripts]
-slackchannel2pdf = "slackchannel2pdf.cli:main"
+slack-message-pipe = "slack-message-pipe.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/ErikKalkoken/slackchannel2pdf"
+Homepage = "https://github.com/deansher/slack-message-pipe"
 
 [tool.flit.module]
-name = "slackchannel2pdf"
+name = "slack-message-pipe"
 
 [tool.isort]
 profile = "black"

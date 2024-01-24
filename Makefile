@@ -1,5 +1,5 @@
-appname = slackchannel2pdf
-package = slackchannel2pdf
+appname = slack-message-pipe
+package = slack-message-pipe
 
 help:
 	@echo "Makefile for $(appname)"
@@ -23,3 +23,13 @@ deploy:
 	rm -f dist/*
 	python setup.py sdist
 	twine upload dist/*
+
+clean:
+	rm -rf dist/ # distribution packages directory
+	rm -rf build/ # build artifacts directory
+	rm -rf slack_message_pipe.egg-info/ # package metadata directory
+	rm -rf .pytest_cache/ # pytest cache directory
+	rm -rf .tox/ # Tox virtual environments and logs directory
+	rm -rf htmlcov/ # HTML coverage reports directory
+	find . -type f -name '*.pyc' -delete # compiled Python files
+	find . -type d -name '__pycache__' -delete # Python cache directories

@@ -1,8 +1,9 @@
-"""Helpers for slackchannel2pdf."""
+"""Helpers for slack-message-pipe."""
 
 # MIT License
 #
 # Copyright (c) 2019 Erik Kalkoken
+# Copyright (c) 2024 Dean Thompson
 
 import html
 import json

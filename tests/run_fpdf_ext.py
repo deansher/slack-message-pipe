@@ -1,10 +1,11 @@
 # MIT License
 #
 # Copyright (c) 2019 Erik Kalkoken
+# Copyright (c) 2024 Dean Thompson
 
 from pathlib import Path
 
-from slackchannel2pdf.fpdf_extension import FPDFext
+from slack-message-pipe.fpdf_extension import FPDFext
 
 
 def main():

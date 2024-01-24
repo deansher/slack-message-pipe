@@ -1,8 +1,9 @@
-"""Slack message transformers for slackchannel2pdf."""
+"""Slack message transformers for slack-message-pipe."""
 
 # MIT License
 #
 # Copyright (c) 2019 Erik Kalkoken
+# Copyright (c) 2024 Dean Thompson
 
 import re
 

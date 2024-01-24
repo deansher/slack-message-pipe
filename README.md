@@ -5,9 +5,9 @@ As of this writing, we only support PDF. JSON is next. Perhaps more later.
 
 [![release](https://img.shields.io/pypi/v/slack-message-pipe?label=release)](https://pypi.org/project/slack-message-pipe/)
 [![python](https://img.shields.io/pypi/pyversions/slack-message-pipe)](https://pypi.org/project/slack-message-pipe/)
-[![license](https://img.shields.io/github/license/ErikKalkoken/slack-message-pipe)](https://github.com/ErikKalkoken/slack-message-pipe/blob/master/LICENSE)
-[![Tests](https://github.com/ErikKalkoken/slack-message-pipe/actions/workflows/main.yml/badge.svg)](https://github.com/ErikKalkoken/slack-message-pipe/actions/workflows/main.yml)
-[![codecov](https://codecov.io/gh/ErikKalkoken/slack-message-pipe/branch/master/graph/badge.svg?token=omhTxW8ALq)](https://codecov.io/gh/ErikKalkoken/slack-message-pipe)
+[![license](https://img.shields.io/github/license/deansher/slack-message-pipe)](https://github.com/deansher/slack-message-pipe/blob/master/LICENSE)
+[![Tests](https://github.com/deansher/slack-message-pipe/actions/workflows/main.yml/badge.svg)](https://github.com/deansher/slack-message-pipe/actions/workflows/main.yml)
+[![codecov](https://codecov.io/gh/deansher/slack-message-pipe/branch/master/graph/badge.svg?token=omhTxW8ALq)](https://codecov.io/gh/deansher/slack-message-pipe)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 This project began as a clone of [ErikKalkoken / slackchannel2pdf](https://github.com/ErikKalkoken/slackchannel2pdf). Our initial goal is to format a Slack channel's message history nicely as JSON for consumption by an LLM. We have to do quite a bit of cleanup of the JSON that comes back from Slack's API to make it simple, self contained, and easy to interpret. Erik already wrote that logic in his project. It's just that his output is PDF, while ours needs to be JSON.
@@ -102,7 +102,7 @@ To export all message from channel "general" starting from July 5th, 2019 at 11:
 slack-message-pipe --token MY_TOKEN --pdf --oldest "2019-JUL-05 11:00" general
 ```
 
-> Tip: You can provide the Slack token either as command line argument `--token` or by setting the environment variable `SLACK-TOKEN`.
+> Tip: You can provide the Slack token either as command line argument `--token` or by setting the environment variable `SLACK_TOKEN`.
 
 ## Arguments
 

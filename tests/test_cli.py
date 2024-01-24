@@ -1,6 +1,7 @@
 # MIT License
 #
 # Copyright (c) 2019 Erik Kalkoken
+# Copyright (c) 2024 Dean Thompson
 
 import datetime as dt
 from argparse import Namespace
@@ -10,11 +11,11 @@ from unittest.mock import patch
 import babel
 import pytz
 
-from slackchannel2pdf.cli import main
+from slack-message-pipe.cli import main
 
 
-@patch("slackchannel2pdf.cli.SlackChannelExporter")
-@patch("slackchannel2pdf.cli._parse_args")
+@patch("slack-message-pipe.cli.SlackChannelExporter")
+@patch("slack-message-pipe.cli._parse_args")
 class TestCli(TestCase):
     def test_should_start_export_for_channel(self, mock_parse_args, MockExporter):
         # given
@@ -61,7 +62,7 @@ class TestCli(TestCase):
             quiet=False,
         )
         # when
-        with patch("slackchannel2pdf.cli.os") as mock_os:
+        with patch("slack-message-pipe.cli.os") as mock_os:
             mock_os.environ = {"SLACK_TOKEN": "DUMMY_TOKEN"}
             main()
         # then

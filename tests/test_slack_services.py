@@ -1,14 +1,15 @@
 # MIT License
 #
 # Copyright (c) 2019 Erik Kalkoken
+# Copyright (c) 2024 Dean Thompson
 
 from unittest.mock import patch
 
-from slackchannel2pdf.slack_service import SlackService
+from slack-message-pipe.slack_service import SlackService
 
 from .helpers import NoSocketsTestCase, SlackClientStub
 
-MODULE_NAME = "slackchannel2pdf.slack_service"
+MODULE_NAME = "slack-message-pipe.slack_service"
 
 
 class TestReduceToDict(NoSocketsTestCase):

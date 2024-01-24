@@ -1,6 +1,7 @@
 # MIT License
 #
 # Copyright (c) 2019 Erik Kalkoken
+# Copyright (c) 2024 Dean Thompson
 
 import datetime as dt
 import unittest
@@ -10,8 +11,8 @@ import babel
 import pytz
 from tzlocal import get_localzone
 
-from slackchannel2pdf import helpers
-from slackchannel2pdf.locales import LocaleHelper
+from slack-message-pipe import helpers
+from slack-message-pipe.locales import LocaleHelper
 
 
 class TestTransformEncoding(unittest.TestCase):
@@ -50,7 +51,7 @@ class TestLocaleHelper(unittest.TestCase):
 
     def test_should_use_fallback_timezone_if_none_can_be_determined(self):
         # when
-        with patch("slackchannel2pdf.locales.get_localzone") as mock_get_localzone:
+        with patch("slack-message-pipe.locales.get_localzone") as mock_get_localzone:
             mock_get_localzone.return_value = None
             locale_helper = LocaleHelper()
         # then

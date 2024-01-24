@@ -1,8 +1,9 @@
-"""Locales for slackchannel2pdf."""
+"""Locales for slack-message-pipe."""
 
 # MIT License
 #
 # Copyright (c) 2019 Erik Kalkoken
+# Copyright (c) 2024 Dean Thompson
 
 import datetime as dt
 import logging

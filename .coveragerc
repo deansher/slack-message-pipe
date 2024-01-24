@@ -1,6 +1,6 @@
 [run]
 branch = True
-source = slackchannel2pdf
+source = slack-message-pipe
 
 [report]
 exclude_lines =
@@ -11,8 +11,8 @@ exclude_lines =
 ignore_errors = True
 omit =
     setup.py
-    slackchannel2pdf/tests.py
-    slackchannel2pdf/tests/*
-    slackchannel2pdf/migrations/*
-    slackchannel2pdf/fpdf_mod/*
+    slack-message-pipe/tests.py
+    slack-message-pipe/tests/*
+    slack-message-pipe/migrations/*
+    slack-message-pipe/fpdf_mod/*
     doc/*

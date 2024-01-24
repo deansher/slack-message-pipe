@@ -4,4 +4,4 @@
 #
 # Copyright (c) 2019 Erik Kalkoken
 
-__version__ = "1.5.2"
+__version__ = "2.0.0"

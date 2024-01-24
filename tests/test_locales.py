@@ -1,15 +1,16 @@
 # MIT License
 #
 # Copyright (c) 2019 Erik Kalkoken
+# Copyright (c) 2024 Dean Thompson
 
 from unittest import TestCase
 from unittest.mock import patch
 
 from babel import Locale
 
-from slackchannel2pdf.locales import LocaleHelper
+from slack-message-pipe.locales import LocaleHelper
 
-MODULE_PATH = "slackchannel2pdf.locales"
+MODULE_PATH = "slack-message-pipe.locales"
 
 
 class TestDetermineLocale(TestCase):

@@ -1,8 +1,9 @@
-"""Global settings incl. from configuration files for slackchannel2pdf."""
+"""Global settings incl. from configuration files for slack-message-pipe."""
 
 # MIT License
 #
 # Copyright (c) 2019 Erik Kalkoken
+# Copyright (c) 2024 Dean Thompson
 
 # pylint: disable = no-member
 
@@ -11,7 +12,7 @@ from ast import literal_eval
 from pathlib import Path
 from typing import Optional
 
-_FILE_NAME_BASE = "slackchannel2pdf"
+_FILE_NAME_BASE = "slack-message-pipe"
 _CONF_FILE_NAME = f"{_FILE_NAME_BASE}.ini"
 _LOG_FILE_NAME = f"{_FILE_NAME_BASE}.log"
 
