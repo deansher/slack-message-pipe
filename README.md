@@ -1,6 +1,6 @@
 # slack-message-pipe
 
-**slack-message-pipe** is a command line tool for exporting the text contents of any Slack channel to a PDF or JSON file.
+**slack_message_pipe** is a command line tool for exporting the text contents of any Slack channel to a PDF or JSON file.
 As of this writing, we only support PDF. JSON is next. Perhaps more later.
 
 [![release](https://img.shields.io/pypi/v/slack-message-pipe?label=release)](https://pypi.org/project/slack-message-pipe/)
@@ -15,8 +15,6 @@ This project began as a clone of [ErikKalkoken / slackchannel2pdf](https://githu
 Our approach is to insert an intermediate language of simple python data structures between the Slack history processing and the PDF generation. Then we will add an adapter to go from that intermediate language to JSON when desired.
 
 We have no way to test on Windows, so we have dropped that support.
-
-# slack-message-pipe
 
 ## Contents
 
@@ -48,7 +46,7 @@ Here is a short summary of the key features of **slack-message-pipe**:
 
 ### Python
 
-You can install the tool from PyPI with `pip install`. This wil require you to have Python reinstalled in your machine and it will work with any OS supported by Python. We recommend installing it into a virtual environment like venv.
+You can install the tool from PyPI with `pip install`. This will require you to have Python reinstalled in your machine and it will work with any OS supported by Python. We recommend installing it into a virtual environment like venv.
 
 ```bash
 pip install slack-message-pipe
@@ -58,7 +56,7 @@ You can then run the tool with the command `slack-message-pipe` as explained in 
 
 ## Token
 
-To run **slack-message-pipe** your need to have a token for your Slack workspace with the following permissions:
+To run **slack-message-pipe**, you need to have a token for your Slack workspace with the following permissions:
 
 - `channels:history`
 - `channels:read`
@@ -67,7 +65,7 @@ To run **slack-message-pipe** your need to have a token for your Slack workspace
 - `users:read`
 - `usergroups:read`
 
-To get a working token you need to create a Slack app in your workspace with a user token. Here is one way on how to do that:
+To get a working token, you need to create a Slack app in your workspace with a user token. Here is one way on how to do that:
 
 1. Create a new Slack app in your workspace (you can give it any name).
 1. Under Oauth & Permissions / User Token Scopes add all the required scopes as documented above.
@@ -160,14 +158,14 @@ optional arguments:
 
 ## Configuration
 
-You can configure many defaults and behaviors via configuration files. Configuration files must have the name `slack-message-pipe.ini` and can be placed in two locations:
+You can configure many defaults and behaviors via configuration files. Configuration files must have the name `slack_message_pipe.ini` and can be placed in two locations:
 
 - home directory (home)
 - current working directory (cwd)
 
 You can also have a configuration file in both. Settings in cwd will overwrite the same settings in home. And calling this app with command line arguments will overwrite the corresponding configuration setting.
 
-Please see the master configuration file for a list of all available configuration sections, options and the current defaults. The master configuration file is `slack-message-pipe/slack-message-pipe.ini` in this repo.
+Please see the master configuration file for a list of all available configuration sections, options and the current defaults. The master configuration file is `slack_message_pipe/slack_message_pipe.ini` in this repo.
 
 ## Limitations
 

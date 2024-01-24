@@ -11,8 +11,8 @@ import babel
 import pytz
 from tzlocal import get_localzone
 
-from slack-message-pipe import helpers
-from slack-message-pipe.locales import LocaleHelper
+from slack_message_pipe import helpers
+from slack_message_pipe.locales import LocaleHelper
 
 
 class TestTransformEncoding(unittest.TestCase):
@@ -51,7 +51,7 @@ class TestLocaleHelper(unittest.TestCase):
 
     def test_should_use_fallback_timezone_if_none_can_be_determined(self):
         # when
-        with patch("slack-message-pipe.locales.get_localzone") as mock_get_localzone:
+        with patch("slack_message_pipe.locales.get_localzone") as mock_get_localzone:
             mock_get_localzone.return_value = None
             locale_helper = LocaleHelper()
         # then

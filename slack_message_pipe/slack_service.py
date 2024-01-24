@@ -10,9 +10,9 @@ from typing import Optional
 import slack_sdk
 from babel.numbers import format_decimal
 
-from . import settings
-from .helpers import transform_encoding
-from .locales import LocaleHelper
+from slack_message_pipe import settings
+from slack_message_pipe.helpers import transform_encoding
+from slack_message_pipe.locales import LocaleHelper
 
 logger = logging.getLogger(__name__)
 

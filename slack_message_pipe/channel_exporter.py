@@ -15,12 +15,12 @@ import pytz
 from babel import Locale
 from babel.numbers import format_decimal
 
-from . import __version__, settings
-from .fpdf_extension import MyFPDF
-from .helpers import transform_encoding, write_array_to_json_file
-from .locales import LocaleHelper
-from .message_transformer import MessageTransformer
-from .slack_service import SlackService
+from slack_message_pipe import __version__, settings
+from slack_message_pipe.fpdf_extension import MyFPDF
+from slack_message_pipe.helpers import transform_encoding, write_array_to_json_file
+from slack_message_pipe.locales import LocaleHelper
+from slack_message_pipe.message_transformer import MessageTransformer
+from slack_message_pipe.slack_service import SlackService
 
 logging.config.dictConfig(settings.DEFAULT_LOGGING)
 logger = logging.getLogger(__name__)

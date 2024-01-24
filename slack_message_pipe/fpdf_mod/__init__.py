@@ -6,7 +6,7 @@
 __license__ = "LGPL 3.0"
 __version__ = "1.7.2"
 
-from .fpdf import (
+from slack_message_pipe.fpdf_mod.fpdf import (
     FPDF,
     FPDF_CACHE_DIR,
     FPDF_CACHE_MODE,
@@ -17,10 +17,10 @@ from .fpdf import (
 )
 
 try:
-    from .html import HTMLMixin
+    from slack_message_pipe.fpdf_mod.html import HTMLMixin
 except ImportError:
     import warnings
 
     warnings.warn("web2py gluon package not installed, required for html2pdf")
 
-from .template import Template
+from slack_message_pipe.fpdf_mod.template import Template

@@ -11,11 +11,11 @@ from unittest.mock import patch
 import babel
 import pytz
 
-from slack-message-pipe.cli import main
+from slack_message_pipe.cli import main
 
 
-@patch("slack-message-pipe.cli.SlackChannelExporter")
-@patch("slack-message-pipe.cli._parse_args")
+@patch("slack_message_pipe.cli.SlackChannelExporter")
+@patch("slack_message_pipe.cli._parse_args")
 class TestCli(TestCase):
     def test_should_start_export_for_channel(self, mock_parse_args, MockExporter):
         # given
@@ -62,7 +62,7 @@ class TestCli(TestCase):
             quiet=False,
         )
         # when
-        with patch("slack-message-pipe.cli.os") as mock_os:
+        with patch("slack_message_pipe.cli.os") as mock_os:
             mock_os.environ = {"SLACK_TOKEN": "DUMMY_TOKEN"}
             main()
         # then

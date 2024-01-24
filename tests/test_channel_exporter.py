@@ -12,10 +12,10 @@ import babel
 import PyPDF2
 import pytz
 
-from slack-message-pipe import __version__, settings
-from slack-message-pipe.channel_exporter import SlackChannelExporter
+from slack_message_pipe import __version__, settings
+from slack_message_pipe.channel_exporter import SlackChannelExporter
 
-from .helpers import NoSocketsTestCase, SlackClientStub
+from tests.helpers import NoSocketsTestCase, SlackClientStub
 
 """
 def test_run_with_error(self):
@@ -31,7 +31,7 @@ if not outputdir.exists():
     os.mkdir(outputdir)
 
 
-@patch("slack-message-pipe.slack_service.slack_sdk")
+@patch("slack_message_pipe.slack_service.slack_sdk")
 class TestSlackChannelExporter(NoSocketsTestCase):
     """New test approach with API mocking, that allows full testing of the exporter"""
 
@@ -199,7 +199,7 @@ class TestTransformations(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        with patch("slack-message-pipe.slack_service.slack_sdk") as mock_slack:
+        with patch("slack_message_pipe.slack_service.slack_sdk") as mock_slack:
             mock_slack.WebClient.return_value = SlackClientStub(team="T12345678")
             cls.exporter = SlackChannelExporter("TOKEN_DUMMY")
 
@@ -328,7 +328,7 @@ class TestOther(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        with patch("slack-message-pipe.slack_service.slack_sdk") as mock_slack:
+        with patch("slack_message_pipe.slack_service.slack_sdk") as mock_slack:
             mock_slack.WebClient.return_value = SlackClientStub(team="T12345678")
             cls.exporter = SlackChannelExporter("TOKEN_DUMMY")
 

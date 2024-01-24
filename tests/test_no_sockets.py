@@ -4,7 +4,7 @@
 
 import urllib.request
 
-from .helpers import NoSocketsTestCase, SocketAccessError
+from tests.helpers import NoSocketsTestCase, SocketAccessError
 
 
 class TestNoSocketsTestCase(NoSocketsTestCase):

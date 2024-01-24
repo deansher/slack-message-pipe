@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 
-from .py3k import PY3K, basestring, unicode
+from slack_message_pipe.fpdf_mod.py3k import PY3K, basestring, unicode
 
 # fpdf php helpers:
 

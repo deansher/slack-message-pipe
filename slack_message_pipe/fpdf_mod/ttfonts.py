@@ -22,8 +22,8 @@ import re
 import warnings
 from struct import pack, unpack, unpack_from
 
-from .php import count, die, str_pad, str_repeat, strlen, substr
-from .py3k import b, ord
+from slack_message_pipe.fpdf_mod.php import count, die, str_pad, str_repeat, strlen, substr
+from slack_message_pipe.fpdf_mod.py3k import b, ord
 
 # Define the value used in the "head" table of a created TTF file
 # 0x74727565 "true" for Mac

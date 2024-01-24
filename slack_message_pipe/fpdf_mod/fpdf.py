@@ -26,9 +26,9 @@ import zlib
 from datetime import datetime
 from functools import wraps
 
-from .fonts import fpdf_charwidths
-from .php import UTF8StringToArray, UTF8ToUTF16BE, print_r, sprintf, substr
-from .py3k import (
+from slack_message_pipe.fpdf_mod.fonts import fpdf_charwidths
+from slack_message_pipe.fpdf_mod.php import UTF8StringToArray, UTF8ToUTF16BE, print_r, sprintf, substr
+from slack_message_pipe.fpdf_mod.py3k import (
     PY3K,
     BytesIO,
     Image,
@@ -40,7 +40,7 @@ from .py3k import (
     unicode,
     urlopen,
 )
-from .ttfonts import TTFontFile
+from slack_message_pipe.fpdf_mod.ttfonts import TTFontFile
 
 # Global variables
 FPDF_VERSION = "1.7.2a"  # with Kalkoken patch

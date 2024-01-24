@@ -12,8 +12,8 @@ import csv
 import os
 import sys
 
-from .fpdf import FPDF
-from .py3k import PY3K, basestring, unicode
+from slack_message_pipe.fpdf_mod.fpdf import FPDF
+from slack_message_pipe.fpdf_mod.py3k import PY3K, basestring, unicode
 
 
 def rgb(col):

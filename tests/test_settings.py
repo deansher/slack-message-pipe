@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from slack-message-pipe import settings
+from slack_message_pipe import settings
 
 
 def deepcopy(config: configparser.ConfigParser) -> configparser.ConfigParser:

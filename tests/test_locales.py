@@ -8,9 +8,9 @@ from unittest.mock import patch
 
 from babel import Locale
 
-from slack-message-pipe.locales import LocaleHelper
+from slack_message_pipe.locales import LocaleHelper
 
-MODULE_PATH = "slack-message-pipe.locales"
+MODULE_PATH = "slack_message_pipe.locales"
 
 
 class TestDetermineLocale(TestCase):

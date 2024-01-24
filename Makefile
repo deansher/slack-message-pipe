@@ -1,5 +1,5 @@
 appname = slack-message-pipe
-package = slack-message-pipe
+package = slack_message_pipe
 
 help:
 	@echo "Makefile for $(appname)"
@@ -8,7 +8,8 @@ coverage:
 	coverage run -m unittest discover && coverage html && coverage report
 
 test:
-	coverage run -m unittest -v tests.test_channel_exporter.TestSlackChannelExporter.test_should_handle_team_name_with_invalid_characters
+	coverage run -m unittest discover -s tests -v
+	coverage report
 
 pylint:
 	pylint $(package)
@@ -27,7 +28,7 @@ deploy:
 clean:
 	rm -rf dist/ # distribution packages directory
 	rm -rf build/ # build artifacts directory
-	rm -rf slack_message_pipe.egg-info/ # package metadata directory
+	rm -rf slack-message-pipe.egg-info/ # package metadata directory
 	rm -rf .pytest_cache/ # pytest cache directory
 	rm -rf .tox/ # Tox virtual environments and logs directory
 	rm -rf htmlcov/ # HTML coverage reports directory

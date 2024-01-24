@@ -5,11 +5,11 @@
 
 from unittest.mock import patch
 
-from slack-message-pipe.slack_service import SlackService
+from slack_message_pipe.slack_service import SlackService
 
-from .helpers import NoSocketsTestCase, SlackClientStub
+from tests.helpers import NoSocketsTestCase, SlackClientStub
 
-MODULE_NAME = "slack-message-pipe.slack_service"
+MODULE_NAME = "slack_message_pipe.slack_service"
 
 
 class TestReduceToDict(NoSocketsTestCase):

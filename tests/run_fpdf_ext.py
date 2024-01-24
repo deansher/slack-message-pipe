@@ -5,7 +5,7 @@
 
 from pathlib import Path
 
-from slack-message-pipe.fpdf_extension import FPDFext
+from slack_message_pipe.fpdf_extension import FPDFext
 
 
 def main():

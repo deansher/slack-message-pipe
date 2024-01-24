@@ -6,8 +6,8 @@ __pycache__/
 .vscode/
 *.pdf
 /*.json
-slack-message-pipe/build/
-slack-message-pipe/dist/
+slack_message_pipe/build/
+slack_message_pipe/dist/
 playground/
 dist/
 build/

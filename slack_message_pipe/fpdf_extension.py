@@ -8,7 +8,7 @@ import logging
 import os
 import re
 
-from . import fpdf_mod, settings
+from slack_message_pipe import fpdf_mod, settings
 
 logger = logging.getLogger(__name__)
 

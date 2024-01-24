@@ -7,9 +7,9 @@
 
 import re
 
-from .helpers import transform_encoding
-from .locales import LocaleHelper
-from .slack_service import SlackService
+from slack_message_pipe.helpers import transform_encoding
+from slack_message_pipe.locales import LocaleHelper
+from slack_message_pipe.slack_service import SlackService
 
 
 class MessageTransformer:

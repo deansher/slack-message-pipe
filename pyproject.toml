@@ -3,7 +3,7 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "slack-message-pipe"
+name = "slack_message_pipe"
 dynamic = ["version", "description"]
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -25,14 +25,29 @@ dependencies = [
     "tzlocal>=2.0.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "tox>=3.24.4",             # For managing virtualenvs for testing
+    "flake8>=4.0.0",           # Tool for style guide enforcement
+    "black>=22.0.0",           # Code formatter
+    "isort>=5.0.0",            # Tool to sort imports
+    "pylint>=2.0.0",           # Source code analyzer
+    "mypy>=0.910",             # Optional static type checker
+    "pre-commit>=2.0.0",       # Framework for managing pre-commit hooks
+]
+
+test = [
+    "pytest>=7.0.0",           # Testing framework
+    "pytest-cov>=3.0.0",       # Plugin for pytest to measure code coverage
+    "coverage[toml]>=5.5",     # Tool for measuring code coverage
+    "PyPDF2>=1.26.0",          # If needed for tests
+]
+
 [project.scripts]
-slack-message-pipe = "slack-message-pipe.cli:main"
+slack_message_pipe = "slack_message_pipe.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/deansher/slack-message-pipe"
-
-[tool.flit.module]
-name = "slack-message-pipe"
 
 [tool.isort]
 profile = "black"
@@ -47,7 +62,6 @@ good-names = ["i", "j", "k", "ex", "x1", "x2", "x3", "x4", "y1", "y2"]
 
 [tool.pylint.'FORMAT']
 max-line-length = 120
-
 
 [tool.pylint.'MESSAGES CONTROL']
 disable = [

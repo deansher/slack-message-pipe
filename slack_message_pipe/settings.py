@@ -12,7 +12,7 @@ from ast import literal_eval
 from pathlib import Path
 from typing import Optional
 
-_FILE_NAME_BASE = "slack-message-pipe"
+_FILE_NAME_BASE = "slack_message_pipe"
 _CONF_FILE_NAME = f"{_FILE_NAME_BASE}.ini"
 _LOG_FILE_NAME = f"{_FILE_NAME_BASE}.log"
 

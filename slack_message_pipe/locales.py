@@ -14,7 +14,7 @@ from babel import Locale, UnknownLocaleError
 from babel.dates import format_date, format_datetime, format_time
 from tzlocal import get_localzone
 
-from . import settings
+from slack_message_pipe import settings
 
 logger = logging.getLogger(__name__)
 
