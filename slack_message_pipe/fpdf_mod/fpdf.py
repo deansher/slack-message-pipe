@@ -27,7 +27,13 @@ from datetime import datetime
 from functools import wraps
 
 from slack_message_pipe.fpdf_mod.fonts import fpdf_charwidths
-from slack_message_pipe.fpdf_mod.php import UTF8StringToArray, UTF8ToUTF16BE, print_r, sprintf, substr
+from slack_message_pipe.fpdf_mod.php import (
+    UTF8StringToArray,
+    UTF8ToUTF16BE,
+    print_r,
+    sprintf,
+    substr,
+)
 from slack_message_pipe.fpdf_mod.py3k import (
     PY3K,
     BytesIO,

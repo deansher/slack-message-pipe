@@ -14,7 +14,6 @@ import pytz
 
 from slack_message_pipe import __version__, settings
 from slack_message_pipe.channel_exporter import SlackChannelExporter
-
 from tests.helpers import NoSocketsTestCase, SlackClientStub
 
 """

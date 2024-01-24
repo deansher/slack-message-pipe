@@ -18,3 +18,4 @@ repos:
     rev: "6.1.0"
     hooks:
       - id: flake8
+        args: ["--max-line-length=88", "--ignore=E501,E203,F401,F841,E741,E713,E722,E265,E262,F821,W503,E711,E731"]

@@ -105,7 +105,7 @@ slack-message-pipe --token MY_TOKEN --pdf --oldest "2019-JUL-05 11:00" general
 ## Arguments
 
 ```text
-usage: slack-message-pipe [-h] [--token TOKEN] 
+usage: slack-message-pipe [-h] [--token TOKEN]
                         --pdf
                         [--oldest OLDEST]
                         [--latest LATEST] [-d DESTINATION]

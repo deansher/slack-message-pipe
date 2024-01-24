@@ -6,7 +6,6 @@
 from unittest.mock import patch
 
 from slack_message_pipe.slack_service import SlackService
-
 from tests.helpers import NoSocketsTestCase, SlackClientStub
 
 MODULE_NAME = "slack_message_pipe.slack_service"
