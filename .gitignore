@@ -14,7 +14,7 @@ build/
 devonly/
 venv/
 .tox/
-.coverage
+coverage.xml
 MANIFEST
 *.egg-info/
 *.pyc
