@@ -34,17 +34,18 @@ dev = [
     "pylint>=2.0.0",           # Source code analyzer
     "mypy>=0.910",             # Optional static type checker
     "pre-commit>=2.0.0",       # Framework for managing pre-commit hooks
+    "cfgv>=3.3.1",             # For validating configuration
 ]
 
 test = [
     "pytest>=7.0.0",           # Testing framework
     "pytest-cov>=3.0.0",       # Plugin for pytest to measure code coverage
     "coverage[toml]>=5.5",     # Tool for measuring code coverage
-    "PyPDF2>=1.26.0",          # If needed for tests
+    "PyPDF2>=1.26.0",          # PDF library
 ]
 
 [project.scripts]
-slack_message_pipe = "slack_message_pipe.cli:main"
+slack-message-pipe = "slack_message_pipe.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/deansher/slack-message-pipe"

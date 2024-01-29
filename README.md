@@ -85,19 +85,19 @@ Here are some examples on how to use **slack-message-pipe**:
 To export the Slack channel "general" as PDF:
 
 ```bash
-slack-message-pipe --token MY_TOKEN --pdf general
+slack-message-pipe --token MY_TOKEN --format pdf general
 ```
 
 To export the Slack channels "general", "random" and "test":
 
 ```bash
-slack-message-pipe --token MY_TOKEN --pdf general random test
+slack-message-pipe --token MY_TOKEN --format pdf general random test
 ```
 
 To export all message from channel "general" starting from July 5th, 2019 at 11:00.
 
 ```bash
-slack-message-pipe --token MY_TOKEN --pdf --oldest "2019-JUL-05 11:00" general
+slack-message-pipe --token MY_TOKEN --format pdf --oldest "2019-JUL-05 11:00" general
 ```
 
 > Tip: You can provide the Slack token either as command line argument `--token` or by setting the environment variable `SLACK_TOKEN`.
@@ -106,7 +106,7 @@ slack-message-pipe --token MY_TOKEN --pdf --oldest "2019-JUL-05 11:00" general
 
 ```text
 usage: slack-message-pipe [-h] [--token TOKEN]
-                        --pdf
+                        --format pdf
                         [--oldest OLDEST]
                         [--latest LATEST] [-d DESTINATION]
                         [--page-orientation {portrait,landscape}]
@@ -116,14 +116,14 @@ usage: slack-message-pipe [-h] [--token TOKEN]
                         [--add-debug-info] [--quiet]
                         channel [channel ...]
 
-This program exports the text of a Slack channel to a PDF file
+Exports a Slack channel's message history to a file.
 
 positional arguments:
-  channel               One or several: name or ID of channel to export.
+  format channel [channel ...] output format (currently only pdf) followed by a
+                        list of channels to export
 
 optional arguments:
   -h, --help            show this help message and exit
-  --pdf                 Specifies PDF as output. Required for now, because we only support PDF.
   --token TOKEN         Slack OAuth token (default: None)
   --oldest OLDEST       don't load messages older than a date (default: None)
   --latest LATEST       don't load messages newer then a date (default: None)

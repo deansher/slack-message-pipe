@@ -68,11 +68,22 @@ def _parse_args(args: list) -> argparse.Namespace:
 
     # main arguments
     my_arg_parser.add_argument(
+        "format",
+        help="Format of the output file (currently only pdf is supported)",
+        choices=["pdf"],
+    )
+    my_arg_parser.add_argument(
         "channel", help="One or several: name or ID of channel to export.", nargs="+"
     )
     my_arg_parser.add_argument("--token", help="Slack OAuth token")
-    my_arg_parser.add_argument("--oldest", help="don't load messages older than a date")
-    my_arg_parser.add_argument("--latest", help="don't load messages newer then a date")
+    my_arg_parser.add_argument(
+        "--oldest",
+        help="oldest timestamp from which to load messages; format: YYYY-MM-DD HH:MM",
+    )
+    my_arg_parser.add_argument(
+        "--latest",
+        help="latest timestamp from which to load messages; format: YYYY-MM-DD HH:MM",
+    )
 
     # PDF file
     my_arg_parser.add_argument(

@@ -52,7 +52,13 @@ pip install --upgrade pip build
 
 ## Development Workflow
 
-When developing new features or fixing bugs, it's important to frequently run tests and check code quality. Use the following commands to ensure your changes meet the project standards:
+Here is a combined command line for setting up the virtual environment and installing the package in editable mode:
+
+```sh
+rm -rf venv && python3 -m venv venv && source venv/bin/activate && pip3 install -e '.[dev,test]'
+```
+
+Use the following commands to validate changes:
 
 - **Running Tests**: `make test` or `tox`
 - **Running a Specific Test**: `tox -e py310 -- tests/test_module.py`

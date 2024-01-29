@@ -4,6 +4,7 @@
 # Copyright (c) 2024 Dean Thompson
 
 import datetime as dt
+import os
 from argparse import Namespace
 from unittest import TestCase
 from unittest.mock import patch
@@ -17,6 +18,9 @@ from slack_message_pipe.cli import main
 @patch("slack_message_pipe.cli.SlackChannelExporter")
 @patch("slack_message_pipe.cli._parse_args")
 class TestCli(TestCase):
+    def setUp(self):
+        os.environ.pop("SLACK_TOKEN", None)
+
     def test_should_start_export_for_channel(self, mock_parse_args, MockExporter):
         # given
         mock_parse_args.return_value = Namespace(
@@ -86,6 +90,7 @@ class TestCli(TestCase):
             timezone=None,
             version=True,
             write_raw_data=None,
+            quiet=False,
         )
         # when
         with self.assertRaises(SystemExit):
@@ -106,6 +111,7 @@ class TestCli(TestCase):
             token=None,
             timezone=None,
             write_raw_data=None,
+            quiet=False,
         )
         # when
         with self.assertRaises(SystemExit):
@@ -203,6 +209,7 @@ class TestCli(TestCase):
             token="DUMMY_TOKEN",
             timezone=None,
             write_raw_data=None,
+            quiet=False,
         )
         # when
         with self.assertRaises(SystemExit):
@@ -223,6 +230,7 @@ class TestCli(TestCase):
             token="DUMMY_TOKEN",
             timezone="xx",
             write_raw_data=None,
+            quiet=False,
         )
         # when
         with self.assertRaises(SystemExit):
@@ -243,6 +251,7 @@ class TestCli(TestCase):
             token="DUMMY_TOKEN",
             timezone=None,
             write_raw_data=None,
+            quiet=False,
         )
         # when
         with self.assertRaises(SystemExit):
@@ -263,6 +272,7 @@ class TestCli(TestCase):
             token="DUMMY_TOKEN",
             timezone=None,
             write_raw_data=None,
+            quiet=False,
         )
         # when
         with self.assertRaises(SystemExit):
