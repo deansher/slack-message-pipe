@@ -3,9 +3,11 @@
 # MIT License
 #
 # Copyright (c) 2019 Erik Kalkoken
+# Copyright (c) 2024 Dean Thompson
 
+import datetime
 import logging
-from typing import Optional
+from typing import Optional, TypedDict
 
 import slack_sdk
 from babel.numbers import format_decimal
@@ -17,6 +19,23 @@ from slack_message_pipe.locales import LocaleHelper
 logger = logging.getLogger(__name__)
 
 
+class SlackMessage(TypedDict, total=False):
+    """Represents a message as returned by the Slack API."""
+
+    type: str
+    bot_id: str
+    user: str
+    username: Optional[str]
+    text: str
+    ts: str
+    thread_ts: Optional[str]
+    reactions: list[dict]
+    files: list[dict]
+    attachments: list[dict]
+    blocks: list[dict]
+    # Include other fields as needed
+
+
 class SlackService:
     """Service layer between main app and Slack API"""
 
@@ -24,14 +43,15 @@ class SlackService:
         self, slack_token: str, locale_helper: Optional[LocaleHelper] = None
     ) -> None:
         """
+        Initialize SlackService with a Slack token and an optional locale helper.
+
         Args:
-        - slack_token: Slack token to use for all API calls
-        - locale_helper: locale to use
+            slack_token: Slack token to use for all API calls.
+            locale_helper: Locale helper instance for localization.
         """
         if slack_token is None:
             raise ValueError("slack_token can not be null")
 
-        # load information for current Slack workspace
         self._client = slack_sdk.WebClient(token=slack_token)
         if not locale_helper:
             locale_helper = LocaleHelper()
@@ -40,13 +60,9 @@ class SlackService:
         logger.info("Current Slack workspace: %s", self.team)
         self._user_names = self.fetch_user_names()
 
-        # set author
         if "user_id" in self._workspace_info:
             author_id = self._workspace_info["user_id"]
-            if author_id in self._user_names:
-                self._author = self._user_names[author_id]
-            else:
-                self._author = f"unknown_user_{author_id}"
+            self._author = self._user_names.get(author_id, f"unknown_user_{author_id}")
         else:
             author_id = None
             self._author = "unknown user"
@@ -55,99 +71,95 @@ class SlackService:
         self._channel_names = self._fetch_channel_names()
         self._usergroup_names = self._fetch_usergroup_names()
 
-        if author_id is not None:
-            self._author_info = self._fetch_user_info(author_id)
-        else:
-            self._author_info = {}
+        self._author_info = self._fetch_user_info(author_id) if author_id else {}
 
     @property
     def author(self) -> str:
-        """Return author."""
+        """Return the author."""
         return self._author
 
     @property
     def team(self) -> str:
-        """Return team."""
+        """Return the team name."""
         return self._workspace_info.get("team", "")
 
     def author_info(self) -> dict:
-        """Return author info."""
+        """Return author information."""
         return self._author_info
 
-    def channel_names(self) -> dict:
+    def channel_names(self) -> dict[str, str]:
         """Return channel names."""
         return self._channel_names
 
-    def user_names(self) -> dict:
+    def user_names(self) -> dict[str, str]:
         """Return user names."""
         return self._user_names
 
-    def usergroup_names(self) -> dict:
+    def usergroup_names(self) -> dict[str, str]:
         """Return usergroup names."""
         return self._usergroup_names
 
     def _fetch_workspace_info(self) -> dict:
-        """returns dict with info about current workspace"""
-
+        """Fetch and return information about the current workspace."""
         logger.info("Fetching workspace info from Slack...")
         res = self._client.auth_test()
-        return res.data  # type: ignore
+        assert isinstance(res.data, dict)
+        return res.data
 
-    def fetch_user_names(self) -> dict:
-        """returns dict of user names with user ID as key"""
+    def fetch_user_names(self) -> dict[str, str]:
+        """Fetch and return a dictionary mapping user IDs to user names."""
         user_names_raw = self._fetch_pages(
             "users_list", key="members", items_name="users"
         )
         user_names = self._reduce_to_dict(user_names_raw, "id", "real_name", "name")
-        for user in user_names:
-            user_names[user] = transform_encoding(user_names[user])
-        return user_names
+        return {user: transform_encoding(name) for user, name in user_names.items()}
 
     def _fetch_user_info(self, user_id: str) -> dict:
-        """returns dict of user info for user ID incl. locale"""
-        logger.info("Fetching user info for author...")
+        """Fetch and return information for a given user ID, including locale."""
+        logger.info("Fetching user info for %s...", user_id)
         response = self._client.users_info(user=user_id, include_locale=True)
         return response["user"]
 
-    def _fetch_channel_names(self) -> dict:
-        """returns dict of channel names with channel ID as key"""
+    def _fetch_channel_names(self) -> dict[str, str]:
+        """Fetch and return a dictionary mapping channel IDs to channel names."""
         channel_names_raw = self._fetch_pages(
             "conversations_list",
             key="channels",
             args={"types": "public_channel,private_channel"},
             items_name="channels",
         )
-        channel_names = self._reduce_to_dict(channel_names_raw, "id", "name")
-        for channel in channel_names:
-            channel_names[channel] = transform_encoding(channel_names[channel])
-        return channel_names
+        return {
+            channel: transform_encoding(name)
+            for channel, name in self._reduce_to_dict(
+                channel_names_raw, "id", "name"
+            ).items()
+        }
 
-    def _fetch_usergroup_names(self) -> dict:
-        """returns dict of usergroup names with usergroup ID as key"""
-
+    def _fetch_usergroup_names(self) -> dict[str, str]:
+        """Fetch and return a dictionary mapping usergroup IDs to usergroup names."""
         logger.info("Fetching usergroups from Slack...")
         response = self._client.usergroups_list()
         usergroup_names = self._reduce_to_dict(response["usergroups"], "id", "handle")
-        if usergroup_names:
-            for usergroup in usergroup_names:
-                usergroup_names[usergroup] = transform_encoding(
-                    usergroup_names[usergroup]
-                )
-            logger.info(
-                "Got a total of %s usergroups for this workspace",
-                format_decimal(len(usergroup_names), locale=self._locale),
-            )
-        else:
-            logger.info("This workspace has no usergroups")
-        return usergroup_names
+        result = {
+            usergroup: transform_encoding(name)
+            for usergroup, name in usergroup_names.items()
+        }
+        logger.info(
+            "Got a total of %s usergroups for this workspace",
+            format_decimal(len(usergroup_names), locale=self._locale),
+        )
+        return result
 
     def fetch_messages_from_channel(
-        self, channel_id, max_messages, oldest=None, latest=None
-    ) -> list:
-        """retrieve messages from a channel on Slack and return as list"""
-
-        oldest_ts = str(oldest.timestamp()) if oldest is not None else 0
-        latest_ts = str(latest.timestamp()) if latest is not None else 0
+        self,
+        channel_id: str,
+        max_messages: Optional[int] = None,
+        oldest: Optional[datetime.datetime] = None,
+        latest: Optional[datetime.datetime] = None,
+    ) -> list[SlackMessage]:
+        """Fetch and return messages from a Slack channel."""
+        oldest_ts = str(oldest.timestamp()) if oldest is not None else None
+        latest_ts = str(latest.timestamp()) if latest is not None else None
         messages = self._fetch_pages(
             "conversations_history",
             key="messages",
@@ -160,12 +172,18 @@ class SlackService:
             items_name="messages",
             collection_name="channel",
         )
-        return messages
+        return messages  # type: ignore
 
     def fetch_threads_from_messages(
-        self, channel_id, messages, max_messages, oldest=None, latest=None
-    ) -> dict:
-        """returns threads from all messages from for a channel as dict"""
+        self,
+        channel_id: str,
+        messages: list[SlackMessage],
+        max_messages: Optional[int] = None,
+        oldest: Optional[datetime.datetime] = None,
+        latest: Optional[datetime.datetime] = None,
+    ) -> dict[str, list[SlackMessage]]:
+        """Fetch and return threads from messages for a channel."""
+        max_messages = max_messages or settings.MAX_MESSAGES_PER_THREAD
         threads = {}
         thread_num = 0
         thread_messages_total = 0
@@ -191,11 +209,16 @@ class SlackService:
         return threads
 
     def _fetch_messages_from_thread(
-        self, channel_id, thread_ts, max_messages, oldest=None, latest=None
-    ) -> list:
-        """retrieve messages from a Slack thread and return as list"""
-        oldest_ts = str(oldest.timestamp()) if oldest is not None else 0
-        latest_ts = str(latest.timestamp()) if latest is not None else 0
+        self,
+        channel_id: str,
+        thread_ts: str,
+        max_messages: int,
+        oldest: Optional[datetime.datetime] = None,
+        latest: Optional[datetime.datetime] = None,
+    ) -> list[SlackMessage]:
+        """Fetch and return messages from a Slack thread."""
+        oldest_ts = str(oldest.timestamp) if oldest is not None else None
+        latest_ts = str(latest.timestamp) if latest is not None else None
         messages = self._fetch_pages(
             "conversations_replies",
             key="messages",
@@ -210,11 +233,11 @@ class SlackService:
             collection_name="channel",
             print_result=False,
         )
-        return messages
+        return messages  # type: ignore
 
     def _fetch_pages(
         self,
-        method,
+        method: str,
         key: str,
         args: Optional[dict] = None,
         limit: Optional[int] = None,
@@ -222,24 +245,20 @@ class SlackService:
         items_name: Optional[str] = None,
         collection_name: Optional[str] = None,
         print_result: bool = True,
-    ) -> list:
-        """helper for retrieving all pages from an API endpoint"""
-        # fetch first page
+    ) -> list[dict]:
+        """Helper function for retrieving all pages from an API endpoint."""
         page = 1
         output_str = (
             f"Fetching {items_name if items_name else method} "
             f"from {collection_name if collection_name else 'workspace'}..."
         )
         logger.info(output_str)
-        if not args:
-            args = {}
-        if not limit:
-            limit = settings.SLACK_PAGE_LIMIT
-        base_args = {**args, **{"limit": limit}}
+        args = args or {}
+        limit = limit or settings.SLACK_PAGE_LIMIT
+        base_args = {**args, "limit": limit}
         response = getattr(self._client, method)(**base_args)
         rows = response[key]
 
-        # fetch additional page (if any)
         while (
             (not max_rows or len(rows) < max_rows)
             and response.get("response_metadata")
@@ -249,9 +268,7 @@ class SlackService:
             logger.info("%s - page %s", output_str, page)
             page_args = {
                 **base_args,
-                **{
-                    "cursor": response["response_metadata"].get("next_cursor"),
-                },
+                "cursor": response["response_metadata"].get("next_cursor"),
             }
             response = getattr(self._client, method)(**page_args)
             rows += response[key]
@@ -264,7 +281,9 @@ class SlackService:
             )
         return rows
 
-    def fetch_bot_names_for_messages(self, messages: list, threads: dict) -> dict:
+    def fetch_bot_names_for_messages(
+        self, messages: list[SlackMessage], threads: dict[str, list[SlackMessage]]
+    ) -> dict[str, str]:
         """Fetches bot names from API for provided messages
 
         Will only fetch names for bots that never appeared with a username
@@ -276,8 +295,9 @@ class SlackService:
         for msg in messages:
             if "bot_id" in msg:
                 bot_id = msg["bot_id"]
-                if "username" in msg:
-                    bot_names[bot_id] = transform_encoding(msg["username"])
+                username_from_message = msg.get("username")
+                if username_from_message:
+                    bot_names[bot_id] = transform_encoding(username_from_message)
                 else:
                     bot_ids.append(bot_id)
 
@@ -285,14 +305,14 @@ class SlackService:
         for thread_messages in threads.values():
             for msg in thread_messages:
                 if "bot_id" in msg:
-                    bot_id = msg["bot_id"]
-                    if "username" in msg:
-                        bot_names[bot_id] = transform_encoding(msg["username"])
+                    username_from_message = msg.get("username")
+                    if username_from_message:
+                        bot_names[bot_id] = transform_encoding(username_from_message)
                     else:
                         bot_ids.append(bot_id)
 
         # Find bot IDs that are not in bot_names
-        bot_ids = set(bot_ids).difference(bot_names.keys())
+        bot_ids = list(set(bot_ids).difference(bot_names.keys()))
 
         # collect bot names from API if needed
         if len(bot_ids) > 0:
@@ -305,11 +325,11 @@ class SlackService:
 
     @staticmethod
     def _reduce_to_dict(
-        arr: list,
+        arr: list[dict],
         key_name: str,
         col_name_primary: str,
         col_name_secondary: Optional[str] = None,
-    ) -> dict:
+    ) -> dict[str, str]:
         """returns dict with selected columns as key and value from list of dict
 
         Args:
@@ -323,12 +343,12 @@ class SlackService:
         col_name_secondary will not be included in the resulting new dict
 
         """
-        arr2 = {}
+        result = {}
         for item in arr:
             if key_name in item:
                 key = item[key_name]
                 if col_name_primary in item:
-                    arr2[key] = item[col_name_primary]
-                elif col_name_secondary is not None and col_name_secondary in item:
-                    arr2[key] = item[col_name_secondary]
-        return arr2
+                    result[key] = item[col_name_primary]
+                elif col_name_secondary and col_name_secondary in item:
+                    result[key] = item[col_name_secondary]
+        return result

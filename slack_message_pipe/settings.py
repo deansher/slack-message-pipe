@@ -10,7 +10,7 @@
 import configparser
 from ast import literal_eval
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TypedDict
 
 _FILE_NAME_BASE = "slack_message_pipe"
 _CONF_FILE_NAME = f"{_FILE_NAME_BASE}.ini"
@@ -19,7 +19,7 @@ _LOG_FILE_NAME = f"{_FILE_NAME_BASE}.log"
 _DEFAULTS_PATH = Path(__file__).parent
 
 
-def _configparser_convert_str(value):
+def _configparser_convert_str(value: str) -> str:
     result = literal_eval(value)
     if not isinstance(result, str):
         raise configparser.ParsingError(f"Needs to be a string type: {value}")
@@ -48,21 +48,6 @@ _my_config = config_parser(
     defaults_path=_DEFAULTS_PATH, home_path=Path.home(), cwd_path=Path.cwd()
 )
 
-# style and layout settings for PDF
-PAGE_UNITS_DEFAULT = "mm"
-FONT_FAMILY_DEFAULT = "NotoSans"
-FONT_FAMILY_MONO_DEFAULT = "NotoSansMono"
-
-PAGE_ORIENTATION_DEFAULT = _my_config.getstr("pdf", "page_orientation")  # type: ignore
-PAGE_FORMAT_DEFAULT = _my_config.getstr("pdf", "page_format")  # type: ignore
-FONT_SIZE_NORMAL = _my_config.getint("pdf", "font_size_normal")
-FONT_SIZE_LARGE = _my_config.getint("pdf", "font_size_large")
-FONT_SIZE_SMALL = _my_config.getint("pdf", "font_size_small")
-LINE_HEIGHT_DEFAULT = _my_config.getint("pdf", "line_height_default")
-LINE_HEIGHT_SMALL = _my_config.getint("pdf", "line_height_small")
-MARGIN_LEFT = _my_config.getint("pdf", "margin_left")
-TAB_WIDTH = _my_config.getint("pdf", "tab_width")
-
 # locale
 FALLBACK_LOCALE = _my_config.getstr("locale", "fallback_locale")  # type: ignore
 
@@ -71,11 +56,86 @@ MINUTES_UNTIL_USERNAME_REPEATS = _my_config.getint(
     "slack", "minutes_until_username_repeats"
 )
 MAX_MESSAGES_PER_CHANNEL = _my_config.getint("slack", "max_messages_per_channel")
+MAX_MESSAGES_PER_THREAD = _my_config.getint("slack", "max_messages_per_thread")
 SLACK_PAGE_LIMIT = _my_config.getint("slack", "slack_page_limit")
 
 
-def _setup_logging(config: configparser.ConfigParser) -> dict:
-    config_logging = {
+class FormatterInfo(TypedDict):
+    """
+    Represents the structure of formatter configurations for logging.
+
+    Attributes:
+        format (str): The string format to be used by the logging formatter.
+    """
+
+    format: str
+
+
+# Define HandlerInfo using the functional syntax because of the reserved word 'class'
+HandlerInfo = TypedDict(
+    "HandlerInfo",
+    {
+        "level": str,
+        "formatter": str,
+        "class": str,
+        "stream": Optional[str],
+        "filename": Optional[str | Path],
+        "mode": Optional[str],
+    },
+    total=False,
+)
+
+HandlerInfo.__doc__ = """
+Represents the structure of handler configurations for logging.
+
+This TypedDict is defined using the functional syntax to allow for the reserved word 'class' to be used as a key.
+
+Attributes:
+    level (str): The log level for the handler.
+    formatter (str): The name of the formatter to be used by this handler.
+    class (str): The class name of the handler to be instantiated.
+    stream (Optional[str]): The stream to be used by the StreamHandler.
+    filename (Optional[str | Path]): The filename to be used by the FileHandler.
+    mode (Optional[str]): The file mode (e.g., 'a' for append) to be used by the FileHandler.
+"""
+
+
+class LoggerInfo(TypedDict):
+    """
+    Represents the structure of logger configurations for logging.
+
+    Attributes:
+        handlers (list[str]): A list of handler names that are associated with the logger.
+        level (str): The log level for the logger.
+        propagate (bool): Indicates whether the log messages should propagate to the parent logger.
+    """
+
+    handlers: list[str]
+    level: str
+    propagate: bool
+
+
+class LoggingConfig(TypedDict):
+    """
+    Represents the overall structure of the logging configuration.
+
+    Attributes:
+        version (int): The configuration schema version, typically set to 1.
+        disable_existing_loggers (bool): Whether to disable existing loggers upon initialization of the configuration.
+        formatters (dict[str, FormatterInfo]): A mapping of formatter names to their configurations.
+        handlers (dict[str, HandlerInfo]): A mapping of handler names to their configurations.
+        loggers (dict[str, LoggerInfo]): A mapping of logger names to their configurations.
+    """
+
+    version: int
+    disable_existing_loggers: bool
+    formatters: dict[str, FormatterInfo]
+    handlers: dict[str, HandlerInfo]
+    loggers: dict[str, LoggerInfo]
+
+
+def _setup_logging(config: configparser.ConfigParser) -> LoggingConfig:
+    config_logging: LoggingConfig = {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
@@ -112,7 +172,7 @@ def _setup_logging(config: configparser.ConfigParser) -> dict:
             "level": config.getstr("logging", "file_log_level"),  # type: ignore
             "formatter": "file",
             "class": "logging.FileHandler",
-            "filename": filename,
+            "filename": str(filename),
             "mode": "a",
         }
         config_logging["loggers"][""]["handlers"].append("file")
