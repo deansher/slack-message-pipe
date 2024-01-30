@@ -7,7 +7,7 @@
 
 import re
 
-from slack_message_pipe.helpers import transform_encoding
+from slack_message_pipe.helpers import normalize_text
 from slack_message_pipe.locales import LocaleHelper
 from slack_message_pipe.slack_service import SlackService
 
@@ -19,13 +19,11 @@ class MessageToMarkdown:
         self,
         slack_service: SlackService,
         locale_helper: LocaleHelper,
-        font_family_mono_default: str,
     ) -> None:
         self._slack_service = slack_service
         self._locale_helper = locale_helper
-        self._font_family_mono_default = font_family_mono_default
 
-    def transform_text(self, text: str) -> str:
+    def transform_text(self, text: str, is_markdown: bool) -> str:
         """Transform Slack-specific markdown into standard markdown.
 
         Args:
@@ -35,7 +33,10 @@ class MessageToMarkdown:
             The transformed text string in standard markdown.
         """
         # Adjust encoding if necessary
-        result = transform_encoding(text)
+        result = normalize_text(text)
+
+        if is_markdown is False:
+            return result
 
         # Transform Slack-specific markdown with brackets
         result = re.sub(r"<(.*?)>", self._replace_markdown_in_text, result)
@@ -102,7 +103,8 @@ class MessageToMarkdown:
             return "@everyone"
         elif special_mention.startswith("!date^"):
             date_id = special_mention.split("^")[1]
-            return self._locale_helper.get_datetime_formatted_str(date_id)
+            # TODO: was self._locale_helper.get_datetime_formatted_str(date_id), but what should it be?
+            return date_id
         else:
             return f"@{special_mention}"
 

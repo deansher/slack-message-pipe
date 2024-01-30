@@ -52,7 +52,8 @@ class File:
 
 @dataclass
 class Attachment:
-    """Represents an attachment to a Slack message, which may include text, fields, and other elements."""
+    """Represents an attachment to a Slack message, which may include text, fields, and other elements.
+    Per Slack's API documentation, attachments are deprecated in favor of blocks."""
 
     fallback: str
     text: str
@@ -60,20 +61,52 @@ class Attachment:
     title: Optional[str] = None
     title_link: Optional[str] = None
     author_name: Optional[str] = None
-    fields: Optional[List[str]] = None
     footer: Optional[str] = None
     image_url: Optional[str] = None
     color: Optional[str] = None
 
 
 @dataclass
-class Block:
-    """Represents a layout block within a Slack message, which structures the content and presentation."""
+class Composition:
+    """
+    Represents a composition object in Slack's Block Kit, which defines text, options,
+    or other interactive features within certain blocks and block elements. This can
+    include simple text objects, confirm dialogs, option structures, and more.
+    """
 
     type: str
     text: Optional[str] = None
-    elements: Optional[List[str]] = None
-    accessory: Optional[dict] = None
+    emoji: Optional[bool] = None
+
+
+@dataclass
+class Element:
+    """
+    Represents a block element within Slack's Block Kit, which can be an interactive
+    component such as a button, menu, or text input. Elements are used within blocks
+    to add interactivity and structure to the messages, modals, or other surfaces.
+    """
+
+    type: str
+    text: Optional[Composition] = None
+    value: Optional[str] = None
+    action_id: Optional[str] = None
+
+
+@dataclass
+class Block:
+    """
+    Represents a layout block within Slack's Block Kit, which structures the content
+    and presentation of messages and other surfaces. Blocks can be of various types
+    like section, divider, image, actions, context, and more, and can contain text,
+    fields, and interactive elements.
+    """
+
+    type: str
+    text: Optional[Composition] = None
+    fields: Optional[List[Composition]] = None
+    accessory: Optional[Element] = None
+    elements: Optional[List[Element]] = None
 
 
 @dataclass

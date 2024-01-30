@@ -5,7 +5,6 @@
 # Copyright (c) 2019 Erik Kalkoken
 # Copyright (c) 2024 Dean Thompson
 
-import html
 import json
 import logging
 from pathlib import Path
@@ -13,31 +12,25 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-def transform_encoding(text: str) -> str:
-    """adjust encoding to latin-1 and transform HTML entities"""
-    text2 = html.unescape(text)
-    text2 = text2.encode("utf-8", "replace").decode("utf-8")
-    text2 = text2.replace("\t", "    ")
-    return text2
+def normalize_text(text: str) -> str:
+    """Should be applied to all text before it is used. Does nothing for now."""
+    return text
 
 
 def read_array_from_json_file(filepath: Path, quiet=False) -> list:
     """reads a json file and returns its contents as array"""
     my_file = filepath.parent / (filepath.name + ".json")
-    if not my_file.is_file:
+    if not my_file.is_file():
         if quiet is False:
             logger.warning("file does not exist: %s", filepath)
-        arr = []
-    else:
-        try:
-            with my_file.open("r", encoding="utf-8") as file:
-                arr = json.load(file)
-        except IOError:
-            if quiet is False:
-                logger.warning("failed to read from %s: ", my_file, exc_info=True)
-            arr = []
-
-    return arr
+        return []
+    try:
+        with my_file.open("r", encoding="utf-8") as file:
+            return json.load(file)
+    except IOError:
+        if quiet is False:
+            logger.warning("failed to read from %s: ", my_file, exc_info=True)
+        return []
 
 
 def write_array_to_json_file(arr, filepath: Path) -> None:

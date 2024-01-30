@@ -13,6 +13,8 @@ from slack_message_pipe.intermediate_data import (
     Block,
     Channel,
     ChannelExportData,
+    Composition,
+    Element,
     File,
     Message,
     Reaction,
@@ -88,7 +90,7 @@ class SlackDataFormatter:
                 channel=channel, messages=messages, threads=threads
             )
         except Exception as e:
-            logger.error(f"Error fetching and formatting channel data: {e}")
+            logger.exception("Error fetching and formatting channel data", exc_info=e)
             raise
 
     def _format_message(self, msg: SlackMessage) -> Message:
@@ -112,7 +114,10 @@ class SlackDataFormatter:
         ts = dt.datetime.fromtimestamp(
             float(msg["ts"]), tz=self._locale_helper.timezone
         )
-        text = self._message_to_markdown.transform_text(msg["text"])
+        is_markdown = msg.get(
+            "mrkdwn", True
+        )  # Default to True if 'mrkdwn' field is missing
+        text = self._message_to_markdown.transform_text(msg["text"], is_markdown)
         reactions = [
             self._format_reaction(reaction) for reaction in msg.get("reactions", [])
         ]
@@ -186,34 +191,70 @@ class SlackDataFormatter:
         Returns:
             An Attachment object with formatted data.
         """
+        # Determine if the attachment text should be treated as markdown
+        is_markdown = "text" in attachment.get("mrkdwn_in", [])
+        text = self._message_to_markdown.transform_text(
+            attachment.get("text", ""), is_markdown
+        )
+
         return Attachment(
             fallback=attachment.get("fallback", ""),
-            text=attachment.get("text", ""),
+            text=text,
             pretext=attachment.get("pretext"),
             title=attachment.get("title"),
             title_link=attachment.get("title_link"),
             author_name=attachment.get("author_name"),
-            fields=attachment.get("fields"),
             footer=attachment.get("footer"),
             image_url=attachment.get("image_url"),
             color=attachment.get("color"),
         )
 
-    def _format_block(self, block: dict[str, any]) -> Block:
-        """
-        Formats a block from Slack API data into a Block data class.
+    def _format_block(self, block: dict[str, Any]) -> Block:
+        block_type = block["type"]
+        block_text = None
+        block_fields = None
+        block_accessory = None
+        block_elements = None
 
-        Args:
-            block: The block data from Slack API.
+        if "text" in block:
+            block_text = Composition(
+                type=block["text"]["type"], text=block["text"]["text"]
+            )
 
-        Returns:
-            A Block object with formatted data.
-        """
+        if "fields" in block:
+            block_fields = [
+                Composition(type=f["type"], text=f["text"]) for f in block["fields"]
+            ]
+
+        if "accessory" in block:
+            block_accessory = self._format_element(block["accessory"])
+
+        if "elements" in block:
+            block_elements = [self._format_element(el) for el in block["elements"]]
+
         return Block(
-            type=block["type"],
-            text=block.get("text", None),
-            elements=block.get("elements"),
-            accessory=block.get("accessory"),
+            type=block_type,
+            text=block_text,
+            fields=block_fields,
+            accessory=block_accessory,
+            elements=block_elements,
+        )
+
+    def _format_element(self, element: dict[str, Any]) -> Element:
+        element_type = element["type"]
+        element_text = None
+
+        if "text" in element:
+            element_text = Composition(
+                type=element["text"]["type"], text=element["text"]["text"]
+            )
+
+        # Handle other fields and types of elements as necessary
+
+        return Element(
+            type=element_type,
+            text=element_text,
+            # ... other fields ...
         )
 
     def _format_thread(self, thread_data: list[SlackMessage]) -> Thread:

@@ -17,9 +17,9 @@ from slack_message_pipe.locales import LocaleHelper
 
 class TestTransformEncoding(unittest.TestCase):
     def test_should_transform_special_chars(self):
-        self.assertEqual(helpers.transform_encoding("special char ✓"), "special char ✓")
-        self.assertEqual(helpers.transform_encoding("&lt;"), "<")
-        self.assertEqual(helpers.transform_encoding("&#60;"), "<")
+        self.assertEqual(helpers.normalize_text("special char ✓"), "special char ✓")
+        self.assertEqual(helpers.normalize_text("&lt;"), "<")
+        self.assertEqual(helpers.normalize_text("&#60;"), "<")
 
 
 class TestLocaleHelper(unittest.TestCase):
