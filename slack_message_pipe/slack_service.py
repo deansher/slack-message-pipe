@@ -159,8 +159,8 @@ class SlackService:
         latest: Optional[datetime.datetime] = None,
     ) -> list[SlackMessage]:
         """Fetch and return messages from a Slack channel."""
-        oldest_ts = str(oldest.timestamp()) if oldest is not None else None
-        latest_ts = str(latest.timestamp()) if latest is not None else None
+        oldest_ts = str(oldest.timestamp()) if oldest else None
+        latest_ts = str(latest.timestamp()) if latest else None
         messages = self._fetch_pages(
             "conversations_history",
             key="messages",
@@ -175,37 +175,27 @@ class SlackService:
         )
         return messages  # type: ignore
 
-    def fetch_threads_from_messages(
+    def fetch_threads_by_ts(
         self,
         channel_id: str,
-        messages: list[SlackMessage],
-        max_messages: Optional[int] = None,
+        top_level_slack_messages: list[SlackMessage],
+        max_thread_messages: Optional[int] = None,
         oldest: Optional[datetime.datetime] = None,
         latest: Optional[datetime.datetime] = None,
     ) -> dict[str, list[SlackMessage]]:
-        """Fetch and return threads from messages for a channel."""
-        max_messages = max_messages or settings.MAX_MESSAGES_PER_THREAD
+        """
+        Fetch and return threads from messages for a channel.
+        Returns a dict of thread_ts: messages, where the messages are in chronological order.
+        """
+        max_thread_messages = max_thread_messages or settings.MAX_MESSAGES_PER_THREAD
         threads = {}
-        thread_num = 0
-        thread_messages_total = 0
-        for msg in messages:
+        for msg in top_level_slack_messages:
             if "thread_ts" in msg and msg["thread_ts"] == msg["ts"]:
                 thread_ts = msg["thread_ts"]
-                thread_num += 1
                 thread_messages = self._fetch_messages_from_thread(
-                    channel_id, thread_ts, max_messages, oldest, latest
+                    channel_id, thread_ts, max_thread_messages, oldest, latest
                 )
                 threads[thread_ts] = thread_messages
-                thread_messages_total += len(thread_messages)
-
-        if thread_messages_total:
-            logger.info(
-                "Received %s messages from %d threads",
-                format_decimal(thread_messages_total, locale=self._locale),
-                thread_num,
-            )
-        else:
-            logger.info("This channel has no threads")
 
         return threads
 
@@ -218,8 +208,8 @@ class SlackService:
         latest: Optional[datetime.datetime] = None,
     ) -> list[SlackMessage]:
         """Fetch and return messages from a Slack thread."""
-        oldest_ts = str(oldest.timestamp) if oldest is not None else None
-        latest_ts = str(latest.timestamp) if latest is not None else None
+        oldest_ts = str(oldest.timestamp()) if oldest else None
+        latest_ts = str(latest.timestamp()) if latest else None
         messages = self._fetch_pages(
             "conversations_replies",
             key="messages",
@@ -232,7 +222,6 @@ class SlackService:
             max_rows=max_messages,
             items_name="threads",
             collection_name="channel",
-            print_result=False,
         )
         return messages  # type: ignore
 

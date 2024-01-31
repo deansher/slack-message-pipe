@@ -8,6 +8,8 @@ import datetime as dt
 import logging
 from typing import Any, Optional
 
+import pytz
+
 from slack_message_pipe.intermediate_data import (
     Attachment,
     Block,
@@ -18,7 +20,6 @@ from slack_message_pipe.intermediate_data import (
     File,
     Message,
     Reaction,
-    Thread,
     User,
 )
 from slack_message_pipe.locales import LocaleHelper
@@ -69,16 +70,30 @@ class SlackDataFormatter:
             A ChannelExportData object containing formatted channel data.
         """
         try:
-            messages_data = self._slack_service.fetch_messages_from_channel(
+            top_level_slack_messages = self._slack_service.fetch_messages_from_channel(
                 channel_id, max_messages, oldest, latest
             )
-            threads_data = self._slack_service.fetch_threads_from_messages(
-                channel_id, messages_data, max_messages, oldest, latest
+            threads_by_ts = self._slack_service.fetch_threads_by_ts(
+                channel_id, top_level_slack_messages, max_messages, oldest, latest
             )
 
-            # Format messages and threads into intermediate data structures
-            messages = [self._format_message(msg) for msg in messages_data]
-            threads = [self._format_thread(thread) for thread in threads_data.values()]
+            # Format messages into intermediate data structures
+            top_level_messages = [
+                self._format_message(sm) for sm in top_level_slack_messages
+            ]
+
+            # Create a mapping for quick access to parent messages by ts
+            parent_messages_by_ts = {msg.ts: msg for msg in top_level_messages}
+
+            # Iterate over threads and nest them within their parent messages
+            for thread_ts, thread_messages in threads_by_ts.items():
+                parent_message = parent_messages_by_ts.get(thread_ts)
+                if parent_message:
+                    for reply_slack_message in thread_messages:
+                        # Omit the parent message
+                        if reply_slack_message["ts"] != thread_ts:
+                            reply_message = self._format_message(reply_slack_message)
+                            parent_message.replies.append(reply_message)
 
             # Get channel information
             channel_name = self._slack_service.channel_names().get(
@@ -87,7 +102,7 @@ class SlackDataFormatter:
             channel = Channel(id=channel_id, name=channel_name)
 
             return ChannelExportData(
-                channel=channel, messages=messages, threads=threads
+                channel=channel, top_level_messages=top_level_messages
             )
         except Exception as e:
             logger.exception("Error fetching and formatting channel data", exc_info=e)
@@ -111,8 +126,11 @@ class SlackDataFormatter:
             )
             user = User(id=user_id, name=user_name)
 
-        ts = dt.datetime.fromtimestamp(
-            float(msg["ts"]), tz=self._locale_helper.timezone
+        ts = msg["ts"]
+        thread_ts = msg.get("thread_ts")
+        ts_display = self._format_slack_ts_for_display(ts)
+        thread_ts_display = (
+            self._format_slack_ts_for_display(thread_ts) if thread_ts else None
         )
         is_markdown = msg.get(
             "mrkdwn", True
@@ -131,14 +149,23 @@ class SlackDataFormatter:
         return Message(
             user=user,
             ts=ts,
+            thread_ts=thread_ts,
+            ts_display=ts_display,
+            thread_ts_display=thread_ts_display,
             text=text,
             reactions=reactions,
             files=files,
             attachments=attachments,
             blocks=blocks,
-            thread_ts=msg.get("thread_ts"),
             is_bot="bot_id" in msg,
         )
+
+    def _format_slack_ts_for_display(self, ts: str) -> str:
+        """Convert a Slack timestamp string to a human-readable format in GMT."""
+        # Convert the Slack timestamp to a float, then to a datetime object in UTC
+        dt_obj = dt.datetime.fromtimestamp(float(ts), tz=pytz.utc)
+        # Format the datetime object as a string, including 'GMT' to indicate the timezone
+        return dt_obj.strftime("%Y-%m-%d %H:%M:%S GMT")
 
     def _format_reaction(self, reaction: dict[str, Any]) -> Reaction:
         """
@@ -256,17 +283,3 @@ class SlackDataFormatter:
             text=element_text,
             # ... other fields ...
         )
-
-    def _format_thread(self, thread_data: list[SlackMessage]) -> Thread:
-        """
-        Formats a thread of messages from Slack API data into a Thread data class.
-
-        Args:
-            thread_data: The list of Slack messages that form a thread.
-
-        Returns:
-            A Thread object with formatted data.
-        """
-        parent_msg = self._format_message(thread_data[0])
-        replies = [self._format_message(reply) for reply in thread_data[1:]]
-        return Thread(parent=parent_msg, replies=replies)

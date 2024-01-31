@@ -169,7 +169,7 @@ class TestSlackService(NoSocketsTestCase):
             "G1234567X"
         ]
         # when
-        result = slack_service.fetch_threads_from_messages("G1234567X", messages, 200)
+        result = slack_service.fetch_threads_by_ts("G1234567X", messages, 200)
         # then
         self.assertIn("1561764011.015500", result)
         ids = {message["ts"] for message in result["1561764011.015500"]}

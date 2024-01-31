@@ -7,7 +7,7 @@ and the formatted export."""
 
 import datetime
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Union
 
 
 @dataclass
@@ -52,8 +52,7 @@ class File:
 
 @dataclass
 class Attachment:
-    """Represents an attachment to a Slack message, which may include text, fields, and other elements.
-    Per Slack's API documentation, attachments are deprecated in favor of blocks."""
+    """Represents an attachment to a Slack message, which may include text, fields, and other elements."""
 
     fallback: str
     text: str
@@ -68,11 +67,7 @@ class Attachment:
 
 @dataclass
 class Composition:
-    """
-    Represents a composition object in Slack's Block Kit, which defines text, options,
-    or other interactive features within certain blocks and block elements. This can
-    include simple text objects, confirm dialogs, option structures, and more.
-    """
+    """Represents a composition object in Slack's Block Kit."""
 
     type: str
     text: Optional[str] = None
@@ -81,32 +76,56 @@ class Composition:
 
 @dataclass
 class Element:
-    """
-    Represents a block element within Slack's Block Kit, which can be an interactive
-    component such as a button, menu, or text input. Elements are used within blocks
-    to add interactivity and structure to the messages, modals, or other surfaces.
-    """
+    """Represents a block element within Slack's Block Kit."""
 
     type: str
-    text: Optional[Composition] = None
-    value: Optional[str] = None
-    action_id: Optional[str] = None
 
 
 @dataclass
 class Block:
-    """
-    Represents a layout block within Slack's Block Kit, which structures the content
-    and presentation of messages and other surfaces. Blocks can be of various types
-    like section, divider, image, actions, context, and more, and can contain text,
-    fields, and interactive elements.
-    """
+    """Represents a layout block within Slack's Block Kit."""
 
     type: str
+
+
+@dataclass
+class SectionBlock(Block):
+    """Represents a section block."""
+
     text: Optional[Composition] = None
     fields: Optional[List[Composition]] = None
     accessory: Optional[Element] = None
-    elements: Optional[List[Element]] = None
+
+
+@dataclass
+class ActionsBlock(Block):
+    """Represents an actions block."""
+
+    elements: List[Element] = field(default_factory=list)
+
+
+@dataclass
+class ContextBlock(Block):
+    """Represents a context block."""
+
+    elements: List[Element] = field(default_factory=list)
+
+
+@dataclass
+class DividerBlock(Block):
+    """Represents a divider block."""
+
+
+@dataclass
+class ImageBlock(Block):
+    """Represents an image block."""
+
+    image_url: str
+    alt_text: str
+    title: Optional[Composition] = None
+
+
+# Define other specific block types as needed...
 
 
 @dataclass
@@ -114,23 +133,26 @@ class Message:
     """Represents a Slack message, including its content, author, and any associated interactive elements."""
 
     user: Optional[User]
-    ts: datetime.datetime
-    text: str
-    reactions: List[Reaction] = field(default_factory=list)
-    files: List[File] = field(default_factory=list)
-    attachments: List[Attachment] = field(default_factory=list)
-    blocks: List[Block] = field(default_factory=list)
-    thread_ts: Optional[str] = None
-    parent_user_id: Optional[str] = None
-    is_bot: bool = False
-
-
-@dataclass
-class Thread:
-    """Represents a thread of messages in Slack, starting with a parent message and including replies."""
-
-    parent: Message
-    replies: List[Message] = field(default_factory=list)
+    ts: str  # Raw timestamp string from Slack
+    thread_ts: Optional[
+        str
+    ]  # Raw thread timestamp string from Slack, if part of a thread
+    ts_display: str  # Human-readable timestamp
+    thread_ts_display: Optional[
+        str
+    ]  # Human-readable thread timestamp, if part of a thread
+    text: str  # The main body text of the message, can be formatted with mrkdwn
+    reactions: List[Reaction] = field(default_factory=list)  # Reactions to the message
+    files: List[File] = field(default_factory=list)  # Files shared in the message
+    attachments: List[Attachment] = field(
+        default_factory=list
+    )  # Legacy secondary attachments
+    blocks: List[Block] = field(default_factory=list)  # Blocks of rich layout
+    parent_user_id: Optional[
+        str
+    ] = None  # User ID of the parent message's author if this is a reply
+    is_bot: bool = False  # Indicates if the message was sent by a bot
+    replies: List["Message"] = field(default_factory=list)  # Replies in a thread
 
 
 @dataclass
@@ -138,5 +160,111 @@ class ChannelExportData:
     """Encapsulates all data for a Slack channel export, including messages and threads."""
 
     channel: Channel
-    messages: List[Message]
-    threads: List[Thread] = field(default_factory=list)
+    top_level_messages: List[Message]
+
+
+# ... existing code ...
+
+
+@dataclass
+class TextStyle:
+    """Represents the style attributes of text in a rich text element."""
+
+    bold: Optional[bool] = None
+    italic: Optional[bool] = None
+    strike: Optional[bool] = None
+    code: Optional[bool] = None
+
+
+@dataclass
+class RichTextElement:
+    """Base class for rich text elements."""
+
+    type: str
+
+
+@dataclass
+class RichTextSectionElement(RichTextElement):
+    """Represents a section element within a rich text block."""
+
+    text: str
+    style: Optional[TextStyle] = None
+
+
+@dataclass
+class RichTextListElement(RichTextElement):
+    """Represents a list element within a rich text block."""
+
+    style: str  # "bullet" or "ordered"
+    elements: List[RichTextSectionElement] = field(default_factory=list)
+
+
+@dataclass
+class RichTextPreformattedElement(RichTextElement):
+    """Represents a preformatted text element within a rich text block."""
+
+    text: str
+
+
+@dataclass
+class RichTextQuoteElement(RichTextElement):
+    """Represents a quote element within a rich text block."""
+
+    text: str
+
+
+@dataclass
+class RichTextChannelElement(RichTextElement):
+    """Represents a channel mention in a rich text element."""
+
+    channel_id: str
+
+
+@dataclass
+class RichTextUserElement(RichTextElement):
+    """Represents a user mention in a rich text element."""
+
+    user_id: str
+
+
+@dataclass
+class RichTextUserGroupElement(RichTextElement):
+    """Represents a user group mention in a rich text element."""
+
+    user_group_id: str
+
+
+@dataclass
+class RichTextEmojiElement(RichTextElement):
+    """Represents an emoji in a rich text element."""
+
+    emoji_name: str
+
+
+@dataclass
+class RichTextLinkElement(RichTextElement):
+    """Represents a hyperlink in a rich text element."""
+
+    url: str
+    text: Optional[str] = None
+
+
+# Define a Union type for all possible rich text elements
+RichTextElementType = Union[
+    RichTextSectionElement,
+    RichTextListElement,
+    RichTextPreformattedElement,
+    RichTextQuoteElement,
+    RichTextChannelElement,
+    RichTextUserElement,
+    RichTextUserGroupElement,
+    RichTextEmojiElement,
+    RichTextLinkElement,
+]
+
+
+@dataclass
+class RichTextBlock(Block):
+    """Represents a rich text block."""
+
+    elements: List[RichTextElementType] = field(default_factory=list)
