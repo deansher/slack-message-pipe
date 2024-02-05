@@ -10,10 +10,10 @@ import logging
 import logging.config
 import os
 import sys
+import zoneinfo
 from pathlib import Path
 from pprint import pformat
 
-import pytz
 from babel import Locale, UnknownLocaleError
 from dateutil import parser
 from slack_sdk.errors import SlackApiError
@@ -171,8 +171,8 @@ def _parse_slack_token(args):
 def _parse_local_timezone(args):
     if args.timezone is not None:
         try:
-            my_tz = pytz.timezone(args.timezone)
-        except pytz.UnknownTimeZoneError:
+            my_tz = zoneinfo.ZoneInfo(args.timezone)
+        except ValueError:
             print("ERROR: Unknown timezone")
             sys.exit(1)
     else:

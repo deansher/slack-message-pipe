@@ -10,8 +10,6 @@ import re
 from pprint import pformat
 from typing import Any, Optional
 
-import pytz
-
 from slack_message_pipe.intermediate_data import (
     ActionsBlock,
     Attachment,
@@ -171,8 +169,9 @@ class ChannelHistoryExporter:
         )
         logger.debug(pformat(ts))
 
-        dt_obj = dt.datetime.fromtimestamp(float(ts), tz=pytz.utc)
-        formatted_ts = dt_obj.strftime("%Y-%m-%d %H:%M:%S GMT")
+        # Always display as UTC because the resulting data should be user-independent.
+        dt_obj = dt.datetime.fromtimestamp(float(ts), tz=dt.timezone.utc)
+        formatted_ts = dt_obj.strftime("%Y-%m-%d %H:%M:%S %Z")
 
         logger.debug(
             f"{self.__class__.__name__}._format_slack_ts_for_display: Intermediate data produced:"
@@ -216,11 +215,13 @@ class ChannelHistoryExporter:
             title=file.get("title"),
             mimetype=file.get("mimetype"),
             size=file.get("size"),
-            timestamp=dt.datetime.fromtimestamp(
-                float(file["timestamp"]), tz=self._locale_helper.timezone
-            )
-            if "timestamp" in file
-            else None,
+            timestamp=(
+                dt.datetime.fromtimestamp(
+                    float(file["timestamp"]), tz=self._locale_helper.timezone
+                )
+                if "timestamp" in file
+                else None
+            ),
         )
 
         logger.debug(

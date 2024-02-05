@@ -37,14 +37,17 @@ def fetch_default_config() -> configparser.ConfigParser:
 
 
 class TestConfigParser(unittest.TestCase):
-    TEST_SECTION = "pdf"
+    TEST_SECTION = "slack"
     TEST_OPTION = "font_size_normal"
+    TEST_VALUE = "6666"
+
+    default_config: configparser.ConfigParser
 
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
         cls.default_config = fetch_default_config()
-        cls.default_config.set(cls.TEST_SECTION, cls.TEST_OPTION, "12")
+        cls.default_config.set(cls.TEST_SECTION, cls.TEST_OPTION, cls.TEST_VALUE)
 
     def test_should_return_default_configuration(self):
         # given
@@ -55,7 +58,9 @@ class TestConfigParser(unittest.TestCase):
         # when
         new_parser = settings.config_parser(defaults_path)
         # then
-        self.assertEqual(new_parser.getint(self.TEST_SECTION, self.TEST_OPTION), 12)
+        self.assertEqual(
+            new_parser.getint(self.TEST_SECTION, self.TEST_OPTION), int(self.TEST_VALUE)
+        )
 
     def test_should_return_home_configuration(self):
         # given

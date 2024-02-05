@@ -7,9 +7,9 @@
 
 import datetime as dt
 import logging
+import zoneinfo
 from typing import Optional
 
-import pytz
 from babel import Locale, UnknownLocaleError
 from babel.dates import format_date, format_datetime, format_time
 from tzlocal import get_localzone
@@ -25,7 +25,7 @@ class LocaleHelper:
     def __init__(
         self,
         my_locale: Optional[Locale] = None,
-        my_tz: Optional[pytz.BaseTzInfo] = None,
+        my_tz: Optional[zoneinfo.ZoneInfo] = None,
         author_info: Optional[dict] = None,
     ) -> None:
         """
@@ -61,22 +61,22 @@ class LocaleHelper:
 
     @staticmethod
     def _determine_timezone(
-        my_tz: Optional[pytz.BaseTzInfo] = None, author_info: Optional[dict] = None
-    ) -> pytz.BaseTzInfo:
+        my_tz: Optional[zoneinfo.ZoneInfo] = None, author_info: Optional[dict] = None
+    ) -> zoneinfo.ZoneInfo:
         if my_tz:
-            if not isinstance(my_tz, pytz.BaseTzInfo):
-                raise TypeError("my_tz must be of type pytz")
+            if not isinstance(my_tz, zoneinfo.ZoneInfo):
+                raise TypeError("my_tz must be of type zoneinfo.ZoneInfo")
         else:
             if author_info:
                 try:
-                    my_tz = pytz.timezone(author_info["tz"])
-                except pytz.exceptions.UnknownTimeZoneError:
+                    my_tz = zoneinfo.ZoneInfo(author_info["tz"])
+                except zoneinfo.ZoneInfoNotFoundError:
                     logger.warning("Could not use timezone info from Slack")
                     my_tz = get_localzone()
             else:
                 my_tz = get_localzone()
         if not my_tz:
-            my_tz = pytz.UTC
+            my_tz = zoneinfo.ZoneInfo("UTC")
         return my_tz
 
     @property
@@ -85,7 +85,7 @@ class LocaleHelper:
         return self._locale
 
     @property
-    def timezone(self) -> pytz.BaseTzInfo:
+    def timezone(self) -> zoneinfo.ZoneInfo:
         """Return timezone."""
         return self._timezone
 
@@ -109,5 +109,5 @@ class LocaleHelper:
 
     def get_datetime_from_ts(self, timestamp: float) -> dt.datetime:
         """Return datetime object of a unix timestamp with local timezone."""
-        my_datetime = dt.datetime.fromtimestamp(float(timestamp), pytz.UTC)
+        my_datetime = dt.datetime.fromtimestamp(float(timestamp), tz=dt.timezone.utc)
         return my_datetime.astimezone(self.timezone)

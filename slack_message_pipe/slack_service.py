@@ -7,7 +7,8 @@
 
 import datetime
 import logging
-from typing import Optional, TypedDict
+from pprint import pformat
+from typing import Optional, TypedDict, cast
 
 import slack_sdk
 from babel.numbers import format_decimal
@@ -102,9 +103,18 @@ class SlackService:
     def _fetch_workspace_info(self) -> dict:
         """Fetch and return information about the current workspace."""
         logger.info("Fetching workspace info from Slack...")
-        res = self._client.auth_test()
-        assert isinstance(res.data, dict)
-        return res.data
+        response = self._client.auth_test()
+        try:
+            result = response.data
+            assert isinstance(
+                result, dict
+            ), f"expected res.data to be dict, got {type(result)}"
+            return result
+        except AttributeError:
+            raise RuntimeError(
+                "Could not fetch workspace info from Slack; response was:"
+                + pformat(response)
+            )
 
     def fetch_user_names(self) -> dict[str, str]:
         """Fetch and return a dictionary mapping user IDs to user names."""

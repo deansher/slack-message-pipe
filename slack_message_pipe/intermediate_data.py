@@ -148,9 +148,9 @@ class Message:
         default_factory=list
     )  # Legacy secondary attachments
     blocks: list[Block] = field(default_factory=list)  # Blocks of rich layout
-    parent_user_id: Optional[
-        str
-    ] = None  # User ID of the parent message's author if this is a reply
+    parent_user_id: Optional[str] = (
+        None  # User ID of the parent message's author if this is a reply
+    )
     is_bot: bool = False  # Indicates if the message was sent by a bot
     replies: list["Message"] = field(default_factory=list)  # Replies in a thread
 
