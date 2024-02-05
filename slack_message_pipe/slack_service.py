@@ -13,7 +13,6 @@ import slack_sdk
 from babel.numbers import format_decimal
 
 from slack_message_pipe import settings
-from slack_message_pipe.helpers import normalize_text
 from slack_message_pipe.locales import LocaleHelper
 
 logger = logging.getLogger(__name__)
@@ -113,7 +112,7 @@ class SlackService:
             "users_list", key="members", items_name="users"
         )
         user_names = self._reduce_to_dict(user_names_raw, "id", "real_name", "name")
-        return {user: normalize_text(name) for user, name in user_names.items()}
+        return {user: name for user, name in user_names.items()}
 
     def _fetch_user_info(self, user_id: str) -> dict:
         """Fetch and return information for a given user ID, including locale."""
@@ -130,7 +129,7 @@ class SlackService:
             items_name="channels",
         )
         return {
-            channel: normalize_text(name)
+            channel: name
             for channel, name in self._reduce_to_dict(
                 channel_names_raw, "id", "name"
             ).items()
@@ -141,10 +140,7 @@ class SlackService:
         logger.info("Fetching usergroups from Slack...")
         response = self._client.usergroups_list()
         usergroup_names = self._reduce_to_dict(response["usergroups"], "id", "handle")
-        result = {
-            usergroup: normalize_text(name)
-            for usergroup, name in usergroup_names.items()
-        }
+        result = {usergroup: name for usergroup, name in usergroup_names.items()}
         logger.info(
             "Got a total of %s usergroups for this workspace",
             format_decimal(len(usergroup_names), locale=self._locale),
@@ -287,7 +283,7 @@ class SlackService:
                 bot_id = msg["bot_id"]
                 username_from_message = msg.get("username")
                 if username_from_message:
-                    bot_names[bot_id] = normalize_text(username_from_message)
+                    bot_names[bot_id] = username_from_message
                 else:
                     bot_ids.append(bot_id)
 
@@ -297,7 +293,7 @@ class SlackService:
                 if "bot_id" in msg:
                     username_from_message = msg.get("username")
                     if username_from_message:
-                        bot_names[bot_id] = normalize_text(username_from_message)
+                        bot_names[bot_id] = username_from_message
                     else:
                         bot_ids.append(bot_id)
 
@@ -310,7 +306,7 @@ class SlackService:
             for bot_id in bot_ids:
                 response = self._client.bots_info(bot=bot_id)
                 if response["ok"]:
-                    bot_names[bot_id] = normalize_text(response["bot"]["name"])
+                    bot_names[bot_id] = response["bot"]["name"]
         return bot_names
 
     @staticmethod

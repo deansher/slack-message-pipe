@@ -7,13 +7,12 @@
 
 import re
 
-from slack_message_pipe.helpers import normalize_text
 from slack_message_pipe.locales import LocaleHelper
 from slack_message_pipe.slack_service import SlackService
 
 
-class MessageToMarkdown:
-    """A class for parsing and transforming Slack messages into standard markdown."""
+class SlackTextConverter:
+    """A class for parsing and transforming Slack text into standard markdown."""
 
     def __init__(
         self,
@@ -23,19 +22,18 @@ class MessageToMarkdown:
         self._slack_service = slack_service
         self._locale_helper = locale_helper
 
-    def transform_text(self, text: str, is_markdown: bool) -> str:
-        """Transform Slack-specific markdown into standard markdown.
+    def convert_slack_text(self, text: str, is_markdown: bool) -> str:
+        """Convert Slack-specific markdown into standard markdown if is_markdown, else return text unchanged.
 
         Args:
-            text: The text string to be transformed.
+            text: The text string to be converted.
+            is_markdown: Whether the text is markdown.
 
         Returns:
-            The transformed text string in standard markdown.
+            The converted text.
         """
-        # Adjust encoding if necessary
-        result = normalize_text(text)
-
-        if is_markdown is False:
+        result = text
+        if not is_markdown:
             return result
 
         # Transform Slack-specific markdown with brackets

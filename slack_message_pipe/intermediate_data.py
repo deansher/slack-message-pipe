@@ -7,7 +7,7 @@ and the formatted export."""
 
 import datetime
 from dataclasses import dataclass, field
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 
 @dataclass
@@ -32,7 +32,7 @@ class Reaction:
 
     name: str
     count: int
-    user_ids: List[str]
+    user_ids: list[str]
 
 
 @dataclass
@@ -55,7 +55,7 @@ class Attachment:
     """Represents an attachment to a Slack message, which may include text, fields, and other elements."""
 
     fallback: str
-    text: str
+    markdown: str
     pretext: Optional[str] = None
     title: Optional[str] = None
     title_link: Optional[str] = None
@@ -93,7 +93,7 @@ class SectionBlock(Block):
     """Represents a section block."""
 
     text: Optional[Composition] = None
-    fields: Optional[List[Composition]] = None
+    fields: Optional[list[Composition]] = None
     accessory: Optional[Element] = None
 
 
@@ -101,14 +101,14 @@ class SectionBlock(Block):
 class ActionsBlock(Block):
     """Represents an actions block."""
 
-    elements: List[Element] = field(default_factory=list)
+    elements: list[Element] = field(default_factory=list)
 
 
 @dataclass
 class ContextBlock(Block):
     """Represents a context block."""
 
-    elements: List[Element] = field(default_factory=list)
+    elements: list[Element] = field(default_factory=list)
 
 
 @dataclass
@@ -141,29 +141,26 @@ class Message:
     thread_ts_display: Optional[
         str
     ]  # Human-readable thread timestamp, if part of a thread
-    text: str  # The main body text of the message, can be formatted with mrkdwn
-    reactions: List[Reaction] = field(default_factory=list)  # Reactions to the message
-    files: List[File] = field(default_factory=list)  # Files shared in the message
-    attachments: List[Attachment] = field(
+    markdown: str  # The main body text of the message, formatted with mrkdwn
+    reactions: list[Reaction] = field(default_factory=list)  # Reactions to the message
+    files: list[File] = field(default_factory=list)  # Files shared in the message
+    attachments: list[Attachment] = field(
         default_factory=list
     )  # Legacy secondary attachments
-    blocks: List[Block] = field(default_factory=list)  # Blocks of rich layout
+    blocks: list[Block] = field(default_factory=list)  # Blocks of rich layout
     parent_user_id: Optional[
         str
     ] = None  # User ID of the parent message's author if this is a reply
     is_bot: bool = False  # Indicates if the message was sent by a bot
-    replies: List["Message"] = field(default_factory=list)  # Replies in a thread
+    replies: list["Message"] = field(default_factory=list)  # Replies in a thread
 
 
 @dataclass
-class ChannelExportData:
-    """Encapsulates all data for a Slack channel export, including messages and threads."""
+class ChannelHistory:
+    """Historical messages and threads for a Slack channel."""
 
     channel: Channel
-    top_level_messages: List[Message]
-
-
-# ... existing code ...
+    top_level_messages: list[Message]
 
 
 @dataclass
@@ -177,6 +174,45 @@ class TextStyle:
 
 
 @dataclass
+class ButtonElement(Element):
+    """Represents a button element within Slack's Block Kit."""
+
+    text: str
+    value: str
+    action_id: str
+    # You can add more fields specific to the button element as needed
+
+
+@dataclass
+class ImageElement(Element):
+    """Represents an image element within Slack's Block Kit."""
+
+    image_url: str
+    alt_text: str
+    # Additional fields for image elements can be added here
+
+
+@dataclass
+class SelectOption:
+    """Represents an option within a select menu."""
+
+    text: str
+    value: str
+
+
+# Refining StaticSelectElement to use SelectOption
+
+
+@dataclass
+class StaticSelectElement(Element):
+    """Represents a static select menu element within Slack's Block Kit."""
+
+    placeholder: str
+    options: list[SelectOption]
+    action_id: str
+
+
+@dataclass
 class RichTextElement:
     """Base class for rich text elements."""
 
@@ -184,11 +220,24 @@ class RichTextElement:
 
 
 @dataclass
+class RichTextStyle:
+    """Represents the style attributes of text in a rich text element."""
+
+    bold: Optional[bool] = None
+    italic: Optional[bool] = None
+    strike: Optional[bool] = None
+    code: Optional[bool] = None
+    highlight: Optional[bool] = None
+    client_highlight: Optional[bool] = None
+    unlink: Optional[bool] = None
+
+
+@dataclass
 class RichTextSectionElement(RichTextElement):
     """Represents a section element within a rich text block."""
 
-    text: str
-    style: Optional[TextStyle] = None
+    elements: list[RichTextElement] = field(default_factory=list)
+    style: Optional[RichTextStyle] = None
 
 
 @dataclass
@@ -196,7 +245,10 @@ class RichTextListElement(RichTextElement):
     """Represents a list element within a rich text block."""
 
     style: str  # "bullet" or "ordered"
-    elements: List[RichTextSectionElement] = field(default_factory=list)
+    elements: list[RichTextSectionElement] = field(default_factory=list)
+    indent: Optional[int] = None
+    offset: Optional[int] = None
+    border: Optional[int] = None
 
 
 @dataclass
@@ -204,6 +256,7 @@ class RichTextPreformattedElement(RichTextElement):
     """Represents a preformatted text element within a rich text block."""
 
     text: str
+    border: Optional[int] = None
 
 
 @dataclass
@@ -211,6 +264,15 @@ class RichTextQuoteElement(RichTextElement):
     """Represents a quote element within a rich text block."""
 
     text: str
+    border: Optional[int] = None
+
+
+@dataclass
+class RichTextTextElement(RichTextElement):
+    """Represents a text element within a rich text block."""
+
+    text: str
+    style: Optional[RichTextStyle] = None
 
 
 @dataclass
@@ -218,6 +280,7 @@ class RichTextChannelElement(RichTextElement):
     """Represents a channel mention in a rich text element."""
 
     channel_id: str
+    style: Optional[RichTextStyle] = None
 
 
 @dataclass
@@ -225,6 +288,7 @@ class RichTextUserElement(RichTextElement):
     """Represents a user mention in a rich text element."""
 
     user_id: str
+    style: Optional[RichTextStyle] = None
 
 
 @dataclass
@@ -232,6 +296,7 @@ class RichTextUserGroupElement(RichTextElement):
     """Represents a user group mention in a rich text element."""
 
     user_group_id: str
+    style: Optional[RichTextStyle] = None
 
 
 @dataclass
@@ -247,6 +312,8 @@ class RichTextLinkElement(RichTextElement):
 
     url: str
     text: Optional[str] = None
+    unsafe: Optional[bool] = None
+    style: Optional[RichTextStyle] = None
 
 
 # Define a Union type for all possible rich text elements
@@ -255,6 +322,7 @@ RichTextElementType = Union[
     RichTextListElement,
     RichTextPreformattedElement,
     RichTextQuoteElement,
+    RichTextTextElement,
     RichTextChannelElement,
     RichTextUserElement,
     RichTextUserGroupElement,
@@ -267,4 +335,4 @@ RichTextElementType = Union[
 class RichTextBlock(Block):
     """Represents a rich text block."""
 
-    elements: List[RichTextElementType] = field(default_factory=list)
+    elements: list[RichTextElement] = field(default_factory=list)

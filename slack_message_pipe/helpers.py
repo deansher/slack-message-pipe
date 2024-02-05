@@ -12,11 +12,6 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-def normalize_text(text: str) -> str:
-    """Should be applied to all text before it is used. Does nothing for now."""
-    return text
-
-
 def read_array_from_json_file(filepath: Path, quiet=False) -> list:
     """reads a json file and returns its contents as array"""
     my_file = filepath.parent / (filepath.name + ".json")

@@ -10,7 +10,7 @@
 import configparser
 from ast import literal_eval
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import Any, Optional, TypedDict, cast
 
 _FILE_NAME_BASE = "slack_message_pipe"
 _CONF_FILE_NAME = f"{_FILE_NAME_BASE}.ini"
@@ -52,9 +52,6 @@ _my_config = config_parser(
 FALLBACK_LOCALE = _my_config.getstr("locale", "fallback_locale")  # type: ignore
 
 # slack
-MINUTES_UNTIL_USERNAME_REPEATS = _my_config.getint(
-    "slack", "minutes_until_username_repeats"
-)
 MAX_MESSAGES_PER_CHANNEL = _my_config.getint("slack", "max_messages_per_channel")
 MAX_MESSAGES_PER_THREAD = _my_config.getint("slack", "max_messages_per_thread")
 SLACK_PAGE_LIMIT = _my_config.getint("slack", "slack_page_limit")
@@ -168,6 +165,7 @@ def _setup_logging(config: configparser.ConfigParser) -> LoggingConfig:
             if file_log_path_full
             else _LOG_FILE_NAME
         )
+        print("Logging to file:", filename, flush=True)
         config_logging["handlers"]["file"] = {
             "level": config.getstr("logging", "file_log_level"),  # type: ignore
             "formatter": "file",
@@ -179,4 +177,4 @@ def _setup_logging(config: configparser.ConfigParser) -> LoggingConfig:
     return config_logging
 
 
-DEFAULT_LOGGING = _setup_logging(_my_config)
+DEFAULT_LOGGING = cast(dict[str, Any], _setup_logging(_my_config))

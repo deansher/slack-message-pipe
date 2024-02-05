@@ -3,11 +3,15 @@
 # MIT License
 #
 # Copyright (c) 2019 Erik Kalkoken
+# Copyright (c) 2024 Dean Thompson
 
 import argparse
+import logging
+import logging.config
 import os
 import sys
 from pathlib import Path
+from pprint import pformat
 
 import pytz
 from babel import Locale, UnknownLocaleError
@@ -15,11 +19,19 @@ from dateutil import parser
 from slack_sdk.errors import SlackApiError
 
 from slack_message_pipe import __version__, settings
-from slack_message_pipe.channel_exporter import SlackChannelExporter
+
+# Import the new SlackDataFormatter
+from slack_message_pipe.channel_history_export import ChannelHistoryExporter
+from slack_message_pipe.intermediate_data import ChannelHistory
+from slack_message_pipe.locales import LocaleHelper
+from slack_message_pipe.slack_service import SlackService
+from slack_message_pipe.slack_text_converter import SlackTextConverter
+
+logging.config.dictConfig(settings.DEFAULT_LOGGING)
 
 
 def main():
-    """Implements the arg parser and starts the channel exporter with its input"""
+    """Implements the arg parser and starts the data formatting with its input"""
 
     args = _parse_args(sys.argv[1:])
     slack_token = _parse_slack_token(args)
@@ -29,87 +41,80 @@ def main():
     latest = _parse_latest(args)
 
     if not args.quiet:
-        channel_postfix = "s" if args.channel and len(args.channel) > 1 else ""
-        print(f"Exporting channel{channel_postfix} from Slack...")
+        channel_postfix = "s" if args.channel_id and len(args.channel_id) > 1 else ""
+        print(f"Formatting data for channel{channel_postfix} from Slack...")
+
     try:
-        exporter = SlackChannelExporter(
-            slack_token=slack_token,
-            my_tz=my_tz,
-            my_locale=my_locale,
-            add_debug_info=args.add_debug_info,
+        slack_service = SlackService(
+            slack_token=slack_token, locale_helper=LocaleHelper(my_locale, my_tz)
+        )
+        message_to_markdown = SlackTextConverter(
+            slack_service=slack_service,
+            locale_helper=LocaleHelper(my_locale, my_tz),
+        )
+        formatter = ChannelHistoryExporter(
+            slack_service=slack_service,
+            locale_helper=LocaleHelper(my_locale, my_tz),
+            slack_text_converter=message_to_markdown,
         )
     except SlackApiError as ex:
         print(f"ERROR: {ex}")
         sys.exit(1)
 
-    result = exporter.run(
-        channel_inputs=args.channel,
-        dest_path=Path(args.destination) if args.destination else None,
-        oldest=oldest,
-        latest=latest,
-        page_orientation=args.page_orientation,
-        page_format=args.page_format,
-        max_messages=args.max_messages,
-        write_raw_data=(args.write_raw_data is True),
-    )
-    for channel in result["channels"].values():
+    for channel_id in args.channel_id:
+        channel_history = formatter.fetch_and_format_channel_data(
+            channel_id=channel_id,
+            oldest=oldest,
+            latest=latest,
+            max_messages=args.max_messages,
+        )
+        pretty_print(
+            channel_history,
+            Path(args.output if args.output else f"{channel_history.channel.name}.txt"),
+        )
         if not args.quiet:
-            print(
-                f"{'written' if channel['ok'] else 'failed'}: {channel['filename_pdf']}"
-            )
+            print(f"Wrote data for channel {channel_id} to {args.output}")
 
 
-def _parse_args(args: list) -> argparse.Namespace:
-    """defines the argument parser and returns parsed result from given argument"""
+def _parse_args(args: list[str]) -> argparse.Namespace:
+    """Defines the argument parser and returns parsed result from given argument"""
     my_arg_parser = argparse.ArgumentParser(
-        description="This program exports the text of a Slack channel to a PDF file",
+        description="Pulls a Slack channel's history and converts it to Python data structures.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
     # main arguments
     my_arg_parser.add_argument(
-        "format",
-        help="Format of the output file (currently only pdf is supported)",
-        choices=["pdf"],
+        "command",
+        help="Action to take on the data",
+        choices=["pprint"],
     )
     my_arg_parser.add_argument(
-        "channel", help="One or several: name or ID of channel to export.", nargs="+"
+        "channel_id", help="One or several: ID of channel to export.", nargs="+"
     )
     my_arg_parser.add_argument("--token", help="Slack OAuth token")
     my_arg_parser.add_argument(
         "--oldest",
-        help="oldest timestamp from which to load messages; format: YYYY-MM-DD HH:MM",
+        help="Oldest timestamp from which to load messages; format: YYYY-MM-DD HH:MM",
     )
     my_arg_parser.add_argument(
         "--latest",
-        help="latest timestamp from which to load messages; format: YYYY-MM-DD HH:MM",
+        help="Latest timestamp from which to load messages; format: YYYY-MM-DD HH:MM",
     )
 
-    # PDF file
+    # Output file
     my_arg_parser.add_argument(
-        "-d",
-        "--destination",
-        help="Specify a destination path to store the PDF file. (TBD)",
-        default=".",
+        "-o",
+        "--output",
+        help="Specify an output file path.",
+        default="channel_data.txt",
     )
 
-    # formatting
-    my_arg_parser.add_argument(
-        "--page-orientation",
-        help="Orientation of PDF pages",
-        choices=["portrait", "landscape"],
-        default=settings.PAGE_ORIENTATION_DEFAULT,
-    )
-    my_arg_parser.add_argument(
-        "--page-format",
-        help="Format of PDF pages",
-        choices=["a3", "a4", "a5", "letter", "legal"],
-        default=settings.PAGE_FORMAT_DEFAULT,
-    )
+    # Timezone and locale
     my_arg_parser.add_argument(
         "--timezone",
         help=(
-            "Manually set the timezone to be used e.g. 'Europe/Berlin' "
+            "Manually set the timezone to be used e.g. 'Europe/Berlin'. "
             "Use a timezone name as defined here: "
             "https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
         ),
@@ -118,7 +123,7 @@ def _parse_args(args: list) -> argparse.Namespace:
         "--locale",
         help=(
             "Manually set the locale to be used with a IETF language tag, "
-            "e.g. ' de-DE' for Germany. "
+            "e.g. 'de-DE' for Germany. "
             "See this page for a list of valid tags: "
             "https://en.wikipedia.org/wiki/IETF_language_tag"
         ),
@@ -127,7 +132,7 @@ def _parse_args(args: list) -> argparse.Namespace:
     # standards
     my_arg_parser.add_argument(
         "--version",
-        help="show the program version and sys.exit",
+        help="Show the program version and exit",
         action="version",
         version=__version__,
     )
@@ -135,39 +140,17 @@ def _parse_args(args: list) -> argparse.Namespace:
     # exporter config
     my_arg_parser.add_argument(
         "--max-messages",
-        help="max number of messages to export",
+        help="Max number of messages to export",
         type=int,
         default=settings.MAX_MESSAGES_PER_CHANNEL,
     )
 
-    # Developer needs
-    my_arg_parser.add_argument(
-        "--write-raw-data",
-        help=(
-            "will also write all raw data returned from the API to files,"
-            " e.g. messages.json with all messages"
-        ),
-        action="store_const",
-        const=True,
-    )
-    my_arg_parser.add_argument(
-        "--add-debug-info",
-        help="wether to add debug info to PDF",
-        action="store_const",
-        const=True,
-        default=False,
-    )
     my_arg_parser.add_argument(
         "--quiet",
         action="store_const",
         const=True,
         default=False,
-        help=(
-            "When provided will not generate normal console output, "
-            "but still show errors "
-            "(console logging not affected and needs to be configured through "
-            "log levels instead)"
-        ),
+        help="When provided will not generate normal console output, but still show errors",
     )
     return my_arg_parser.parse_args(args)
 
@@ -231,6 +214,13 @@ def _parse_latest(args):
     else:
         latest = None
     return latest
+
+
+def pretty_print(formatted_data: ChannelHistory, dest_path: Path):
+    """Pretty-prints the Python intermediate data structures to a file."""
+    with open(dest_path, "w", encoding="utf-16") as f:
+        f.write(pformat(formatted_data))
+        f.write("\n")
 
 
 if __name__ == "__main__":
