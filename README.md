@@ -53,6 +53,8 @@ You can install the tool from PyPI with `pip install`. This will require you to 
 pip install slack-message-pipe
 ```
 
+This package is compatible with Python 3.10 and 3.11. We use Flit for package management and distribution.
+
 You can then run the tool with the command `slack-message-pipe` as explained in detail under [Usage](#usage).
 
 ## Token
@@ -166,7 +168,7 @@ You can configure many defaults and behaviors via configuration files. Configura
 
 You can also have a configuration file in both. Settings in cwd will overwrite the same settings in home. And calling this app with command line arguments will overwrite the corresponding configuration setting.
 
-Please see the master configuration file for a list of all available configuration sections, options and the current defaults. The master configuration file is `slack_message_pipe/slack_message_pipe.ini` in this repo.
+Please see the [master configuration file](https://github.com/deansher/slack-message-pipe/blob/master/slack_message_pipe/slack_message_pipe.ini) for a list of all available configuration sections, options, and the current defaults.
 
 ## Limitations
 

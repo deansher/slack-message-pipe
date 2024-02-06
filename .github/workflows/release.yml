@@ -2,7 +2,6 @@ name: Release on PyPI
 
 on:
   release:
-    # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#release
     types: [released, prereleased]
 
 jobs:
@@ -12,22 +11,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@main
+        uses: actions/checkout@v4  # Make sure to use the correct version here
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: Install Tools
-        run: |
-          python -m pip install -U build twine
+      - name: Install Flit
+        run: python -m pip install flit
 
-      - name: Package and Upload
+      - name: Build and Publish
         env:
-          STACKMANAGER_VERSION: ${{ github.event.release.tag_name }}
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+          # Assuming you have a secret named PYPI_API_TOKEN
+          FLIT_AUTH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-          python -m build
-          python -m twine upload dist/*
+          flit publish
