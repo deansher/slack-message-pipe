@@ -19,6 +19,14 @@ repos:
     hooks:
       - id: flake8
         args: ["--max-line-length=110", "--ignore=E501,E203,F401,F841,E741,E713,E722,E265,E262,F821,W503,E711,E731"]
+  - repo: https://github.com/pycqa/pylint
+    rev: v3.0.3
+    hooks:
+      - id: pylint
+        args: [
+          "--disable=missing-function-docstring,too-many-locals,logging-fstring-interpolation,unused-argument,no-else-return,raise-missing-from,unnecessary-comprehension,too-many-return-statements,fixme,unused-import,import-error,missing-module-docstring,missing-class-docstring,protected-access,consider-using-with,superfluous-parens",
+        ]
+        additional_dependencies: [pylint==3.0.3]
   # TODO: get this working. As of this writing, `pre-commit run --all-files` seems to be
   # running mypy against an old version of the source.
   # - repo: https://github.com/pre-commit/mirrors-mypy
