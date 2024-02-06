@@ -24,6 +24,6 @@ jobs:
       - name: Build and Publish
         env:
           FLIT_USERNAME: __token__
-          FLIT_AUTH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+          FLIT_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           flit publish
