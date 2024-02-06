@@ -1,7 +1,12 @@
 # slack-message-pipe
 
-**slack_message_pipe** is a command line tool for exporting the text contents of any Slack channel to a PDF or JSON file.
-As of this writing, we only support PDF. JSON is next. Perhaps more later.
+**slack_message_pipe** is a library for reading a Slack channel's message history as simple Python data structures. This has many benefits over Slack's API when formatting channel history for human or LLM consumption:
+
+- We stitch data from multiple API calls into a single data structure. For example, our `Message` object contains user and channel names instead of IDs.
+- We convert Slack's special markdown into standard markdown.
+- We provide the output as simple, typed Python objects that you and your IDE can understand.
+
+Eventually, we intend to enhance this package also process the live message flow as activity proceeds in a set of Slack channels or threads.
 
 [![release](https://img.shields.io/pypi/v/slack-message-pipe?label=release)](https://pypi.org/project/slack-message-pipe/)
 [![python](https://img.shields.io/pypi/pyversions/slack-message-pipe)](https://pypi.org/project/slack-message-pipe/)
@@ -10,11 +15,7 @@ As of this writing, we only support PDF. JSON is next. Perhaps more later.
 [![codecov](https://codecov.io/gh/deansher/slack-message-pipe/branch/master/graph/badge.svg?token=omhTxW8ALq)](https://codecov.io/gh/deansher/slack-message-pipe)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-This project began as a clone of [ErikKalkoken / slackchannel2pdf](https://github.com/ErikKalkoken/slackchannel2pdf). Our initial goal is to format a Slack channel's message history nicely as JSON for consumption by an LLM. We have to do quite a bit of cleanup of the JSON that comes back from Slack's API to make it simple, self contained, and easy to interpret. Erik already wrote that logic in his project. It's just that his output is PDF, while ours needs to be JSON.
-
-Our approach is to insert an intermediate language of simple python data structures between the Slack history processing and the PDF generation. Then we will add an adapter to go from that intermediate language to JSON when desired.
-
-We have no way to test on Windows, so we have dropped that support.
+This project began as a clone of [ErikKalkoken / slackchannel2pdf](https://github.com/ErikKalkoken/slackchannel2pdf). We transformed that code to produce Python data structures instead of PDF files. We have no way to test on Windows, so we have dropped that support.
 
 ## Contents
 
