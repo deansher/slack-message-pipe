@@ -1,81 +1,81 @@
+# Maintainers Guide for `slack-message-pipe`
+
+Thank you for contributing to `slack-message-pipe`! This guide is designed to help maintainers and contributors set up their development environment, follow best practices, and release updates to PyPI.
+
 ## Setting Up Development Environment
 
-To set up a development environment for `slack-message-pipe`, you should create a virtual environment and install the package in editable mode along with its development dependencies.
+To contribute to `slack-message-pipe`, you'll need to set up a local development environment. This involves creating a virtual environment, installing the package in editable mode, and installing development dependencies.
 
 ### Creating a Virtual Environment
 
-A virtual environment is an isolated Python environment that allows you to manage dependencies for different projects. To create a virtual environment, run:
+A virtual environment isolates project dependencies. Create one by running:
 
 ```sh
-python -m venv venv
+python3 -m venv venv
 ```
 
-This command creates a new directory called `venv` where the virtual environment files are stored. To activate the virtual environment, use the following command:
+Activate the virtual environment with:
 
-On Unix or MacOS:
-```sh
-source venv/bin/activate
-```
-
-On Windows:
-```sh
-venv\Scripts\activate
-```
+- **Unix or MacOS**: `source venv/bin/activate`
+- **Windows**: `venv\Scripts\activate`
 
 ### Installing the Package in Editable Mode
 
-To install `slack-message-pipe` in editable mode, which allows you to make changes to the code and see them reflected immediately, run:
+Installing the package in editable mode (`-e`) allows you to modify the code and see changes without reinstalling the package:
 
 ```sh
-pip install -e .
+pip3 install -e '.[dev,test]'
 ```
 
-This command installs the package in such a way that changes to the source files will immediately affect the installed package without needing to reinstall.
+This installs all development and test dependencies to ensure you can run tests, linting, and other development tools.
 
-### Installing Development Dependencies
-
-To install the additional dependencies required for testing and other development tasks, run:
-
-```sh
-pip install '.[dev,test]'
-```
-
-This command installs the dependencies specified under the `optional-dependencies` section in `pyproject.toml` for the `dev` extra.
 
 ### Updating pip and Build Tools
 
-Ensure you have the latest versions of `pip` and build tools to handle the `pyproject.toml` configuration:
+Ensure your `pip` and build tools are up-to-date to handle the project's `pyproject.toml` configuration:
 
 ```sh
-pip install --upgrade pip build
+pip3 install --upgrade pip build
 ```
 
 ## Development Workflow
 
-Here is a combined command line for setting up the virtual environment and installing the package in editable mode:
+To streamline the setup, you can use this combined command to create the environment, activate it, and install all necessary dependencies:
 
 ```sh
-rm -rf venv && python3 -m venv venv && source venv/bin/activate && pip3 install -e '.[dev,test]'
+rm -rf venv && python3 -m venv venv && source venv/bin/activate && pip3 install --upgrade pip && pip3 install -e '.[dev,test]'
 ```
 
-Use the following commands to validate changes:
+### Common Development Tasks
 
-- **Running Tests**: `make test` or `tox`
-- **Running a Specific Test**: `tox -e py310 -- tests/test_module.py`
-- **Checking Code Quality**: `make pylint` or `tox -e flake8`
+- **Running Tests**: Execute `make test` or `tox` to run all tests.
+- **Running a Specific Test**: Use `tox -e py310 -- tests/test_module.py` for targeted testing.
+- **Checking Code Quality**: Run `make pylint` or `tox -e flake8` for linting and code quality checks.
 
-After making changes, you can build the package locally to test the installation process:
+### Building the Package Locally
+
+Before releasing, build the package locally to test the installation process:
 
 ```sh
-python -m build
+python3 -m build
 ```
 
-This command generates distribution files in the `dist/` directory that you can install using `pip`.
+This generates distribution files in the `dist/` directory, which you can install using `pip`.
 
-Remember to deactivate your virtual environment when you're done working on the project:
+### Releasing to PyPI
+
+To release a new version to PyPI, ensure all tests pass and your changes are merged into the main branch. Then, tag your release with a version number and create a GitHub Release. The GitHub Actions workflow defined in `.github/workflows/release.yml` will automatically package and upload the new version to PyPI.
+
+To create a GitHub Release, navigate to the "Releases" section of your GitHub repository, click on "Draft a new release," select the tag you created for your version, fill in the release title and description with the details of your changes, and then click "Publish release" to make it official.
+
+### Deactivating the Virtual Environment
+
+When you're finished, deactivate the virtual environment:
 
 ```sh
 deactivate
 ```
 
-Thank you for maintaining `slack-message-pipe`. Your contributions help improve the tool for everyone!
+## Thank You!
+
+Your contributions are invaluable to the `slack-message-pipe` project. By following these guidelines, you help ensure a robust and reliable tool for everyone.
