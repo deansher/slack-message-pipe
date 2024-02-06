@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased] - yyyy-mm-dd
+## [0.0.1] - 2024-02-06
+
+- Complete overhaul of the code base, converting it from `slackchannel2pdf` to `slack-message-pipe`.
 
 ######### All changes starting 2024 are MIT License, Copyright (c) Dean Thompson
 
