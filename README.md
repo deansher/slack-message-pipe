@@ -73,52 +73,33 @@ Currently, the cli is just for testing. It exports the data as pretty printed py
 You can provide the Slack token either as command line argument `--token` or by setting the environment variable `SLACK_TOKEN`.
 
 ```text
-usage: slack-message-pipe [-h] [--token TOKEN]
-                        --format pdf
-                        [--oldest OLDEST]
-                        [--latest LATEST] [-d DESTINATION][--version]
-                        [--max-messages MAX_MESSAGES] [--write-raw-data]
-                        [--add-debug-info] [--quiet]
-                        channel [channel ...]
+usage: slack-message-pipe [-h] [--token TOKEN] [--oldest OLDEST] [--latest LATEST] [-o OUTPUT] [--formatter_timezone FORMATTER_TIMEZONE]
+                          [--formatter_locale FORMATTER_LOCALE] [--version] [--max-messages MAX_MESSAGES] [--quiet]
+                          {pprint,markdown} channel_id [channel_id ...]
 
-Exports a Slack channel's message history to a file.
+Pulls a Slack channel's history and converts it to various formats.
 
 positional arguments:
-  format channel [channel ...] output format (currently only pdf) followed by a
-                        list of channels to export
+  {pprint,markdown}     Action to take on the data
+  channel_id            One or several: ID of channel to export.
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  --token TOKEN         Slack OAuth token (default: None)
-  --oldest OLDEST       don't load messages older than a date (default: None)
-  --latest LATEST       don't load messages newer then a date (default: None)
-  -d DESTINATION, --destination DESTINATION
-                        Specify a destination path to store the PDF file.
-                        (TBD) (default: .)
-  --page-orientation {portrait,landscape}
-                        Orientation of PDF pages (default: portrait)
-  --page-format {a3,a4,a5,letter,legal}
-                        Format of PDF pages (default: a4)
-  --timezone TIMEZONE   Manually set the timezone to be used e.g.
-                        'Europe/Berlin' Use a timezone name as defined here: h
-                        ttps://en.wikipedia.org/wiki/List_of_tz_database_time_
-                        zones (default: None)
-  --locale LOCALE       Manually set the locale to be used with a IETF
-                        language tag, e.g. ' de-DE' for Germany. See this page
-                        for a list of valid tags:
-                        https://en.wikipedia.org/wiki/IETF_language_tag
-                        (default: None)
-  --version             show the program version and exit
+  --token TOKEN         Slack OAuth token (default from environment variable `SLACK_TOKEN`)
+  --oldest OLDEST       Oldest timestamp from which to load messages; format: YYYY-MM-DD HH:MM (default: None)
+  --latest LATEST       Latest timestamp from which to load messages; format: YYYY-MM-DD HH:MM (default: None)
+  -o OUTPUT, --output OUTPUT
+                        Specify an output file path. (default: channel_data.txt)
+  --formatter_timezone FORMATTER_TIMEZONE
+                        Manually set the timezone to be used for formatting dates and times, such as 'Europe/Berlin'. Use a timezone name as defined here:
+                        https://en.wikipedia.org/wiki/List_of_tz_database_time_zonesDefaults to the process timezone. (default: None)
+  --formatter_locale FORMATTER_LOCALE
+                        Manually set the locale to be used for formatting, with a IETF language tag, e.g. 'de-DE' for Germany. See this page for a list of
+                        valid tags: https://en.wikipedia.org/wiki/IETF_language_tag . Defaults to the process locale. (default: None)
+  --version             Show the program version and exit
   --max-messages MAX_MESSAGES
-                        max number of messages to export (default: 10000)
-  --write-raw-data      will also write all raw data returned from the API to
-                        files, e.g. messages.json with all messages (default:
-                        None)
-  --add-debug-info      wether to add debug info to PDF (default: False)
-  --quiet               When provided will not generate normal console output,
-                        but still show errors (console logging not affected
-                        and needs to be configured through log levels instead)
-                        (default: False)
+                        Max number of messages to export (default: 10000)
+  --quiet               When provided will not generate normal console output, but still show errors (default: False)
 ```
 
 ## Configuration

@@ -24,7 +24,7 @@ repos:
     hooks:
       - id: pylint
         args: [
-          "--disable=missing-function-docstring,too-many-locals,logging-fstring-interpolation,unused-argument,no-else-return,raise-missing-from,unnecessary-comprehension,too-many-return-statements,fixme,unused-import,import-error,missing-module-docstring,missing-class-docstring,protected-access,consider-using-with,superfluous-parens",
+          "--disable=missing-function-docstring,too-many-locals,logging-fstring-interpolation,unused-argument,no-else-return,raise-missing-from,unnecessary-comprehension,too-many-return-statements,fixme,unused-import,import-error,missing-module-docstring,missing-class-docstring,protected-access,consider-using-with,superfluous-parens,line-too-long,broad-exception-caught",
         ]
         additional_dependencies: [pylint==3.0.3]
   # TODO: get this working. As of this writing, `pre-commit run --all-files` seems to be
