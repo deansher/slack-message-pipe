@@ -6,7 +6,7 @@
 - We convert Slack's special markdown into standard markdown.
 - We provide the output as simple, typed Python objects that you and your IDE can understand.
 
-Eventually, we intend to enhance this package also process the live message flow as activity proceeds in a set of Slack channels or threads.
+We intend to enhance this package also process the live message flow as activity proceeds in a set of Slack channels or threads.
 
 [![release](https://img.shields.io/pypi/v/slack-message-pipe?label=release)](https://pypi.org/project/slack-message-pipe/)
 [![python](https://img.shields.io/pypi/pyversions/slack-message-pipe)](https://pypi.org/project/slack-message-pipe/)
@@ -30,30 +30,20 @@ This project began as a clone of [ErikKalkoken / slackchannel2pdf](https://githu
 
 ## Overview
 
-**slack-message-pipe** is an open source project and offered free of charge and under the MIT license. Please check attached licence file for details.
-
-## Features
-
-Here is a short summary of the key features of **slack-message-pipe**:
-
-- Export of any public and private Slack channel to a PDF  or JSON file (text only)
-- Automatic detection of timezone and locale based from Slack. Can also be set manually if needed.
-- Exporting support for all Slack features incl. threads and layout blocks
-- Ability to export only the portion of a channel for a specific time period
-- Ability to configure page layout of PDF file (e.g. Portrait vs. Landscape)
-- Many defaults and behaviors can be configured with configuration files
+**slack-message-pipe** is open source under the MIT license. See `./LICENSE`.
+We use Flit for package management and distribution.
 
 ## Installation
 
 ### Python
 
-You can install the tool from PyPI with `pip install`. This will require you to have Python reinstalled in your machine and it will work with any OS supported by Python. We recommend installing it into a virtual environment like venv.
+This package is compatible with Python 3.10 and 3.11.
+
+You can install the tool from PyPI with `pip install`:
 
 ```bash
 pip install slack-message-pipe
 ```
-
-This package is compatible with Python 3.10 and 3.11. We use Flit for package management and distribution.
 
 You can then run the tool with the command `slack-message-pipe` as explained in detail under [Usage](#usage).
 
@@ -68,7 +58,7 @@ To run **slack-message-pipe**, you need to have a token for your Slack workspace
 - `users:read`
 - `usergroups:read`
 
-To get a working token, you need to create a Slack app in your workspace with a user token. Here is one way on how to do that:
+Here is one way to do that:
 
 1. Create a new Slack app in your workspace (you can give it any name).
 1. Under Oauth & Permissions / User Token Scopes add all the required scopes as documented above.
@@ -78,43 +68,15 @@ After successful installation the token for your app will then shown under Basic
 
 ## Usage
 
-In order to use **slack-message-pipe** you need:
+Currently, the cli is just for testing. It exports the data as pretty printed python data structures.
 
-1. have it installed on your system (see [Installation](#installation))
-2. have a Slack token for the respective Slack workspace with the required permissions (see [Token](#token)).
-
-Here are some examples on how to use **slack-message-pipe**:
-
-To export the Slack channel "general" as PDF:
-
-```bash
-slack-message-pipe --token MY_TOKEN --format pdf general
-```
-
-To export the Slack channels "general", "random" and "test":
-
-```bash
-slack-message-pipe --token MY_TOKEN --format pdf general random test
-```
-
-To export all message from channel "general" starting from July 5th, 2019 at 11:00.
-
-```bash
-slack-message-pipe --token MY_TOKEN --format pdf --oldest "2019-JUL-05 11:00" general
-```
-
-> Tip: You can provide the Slack token either as command line argument `--token` or by setting the environment variable `SLACK_TOKEN`.
-
-## Arguments
+You can provide the Slack token either as command line argument `--token` or by setting the environment variable `SLACK_TOKEN`.
 
 ```text
 usage: slack-message-pipe [-h] [--token TOKEN]
                         --format pdf
                         [--oldest OLDEST]
-                        [--latest LATEST] [-d DESTINATION]
-                        [--page-orientation {portrait,landscape}]
-                        [--page-format {a3,a4,a5,letter,legal}]
-                        [--timezone TIMEZONE] [--locale LOCALE] [--version]
+                        [--latest LATEST] [-d DESTINATION][--version]
                         [--max-messages MAX_MESSAGES] [--write-raw-data]
                         [--add-debug-info] [--quiet]
                         channel [channel ...]
