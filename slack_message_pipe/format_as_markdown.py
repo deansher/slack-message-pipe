@@ -39,12 +39,6 @@ def format_as_markdown(history: ChannelHistory) -> str:
             )
             output += reactions_line + "\n"
 
-        # Thread indicator
-        if message.thread_ts:
-            output += (
-                f"> _This message is part of a thread ({message.thread_ts_display})_\n"
-            )
-
         output += "\n"
         output += format_replies(message.replies, level=3)
 

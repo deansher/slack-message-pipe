@@ -6,6 +6,7 @@
 # Copyright (c) 2024 Dean Thompson
 
 import argparse
+import datetime as dt
 import logging
 import logging.config
 import os
@@ -13,6 +14,7 @@ import sys
 import zoneinfo
 from pathlib import Path
 from pprint import pformat
+from typing import Optional
 
 import dateutil.parser
 from babel import Locale, UnknownLocaleError
@@ -65,6 +67,7 @@ def main():
         print(f"ERROR: {ex}")
         sys.exit(1)
 
+    output_file_extension = "md" if args.command == "markdown" else "txt"
     for channel_id in args.channel_id:
         channel_history = formatter.fetch_and_format_channel_data(
             channel_id=channel_id,
@@ -72,32 +75,35 @@ def main():
             latest=latest,
             max_messages=args.max_messages,
         )
-        if args.command == "pprint":
-            pretty_print(
-                channel_history,
-                Path(
-                    args.output
-                    if args.output
-                    else f"{channel_history.channel.name}.txt"
-                ),
-            )
-        elif args.command == "markdown":
-            markdown_output = format_as_markdown(channel_history)
-            output_path = (
-                args.output if args.output else f"{channel_history.channel.name}.md"
-            )
-            with open(output_path, "w", encoding="utf-8") as f:
-                f.write(markdown_output)
-        else:
-            print(f"ERROR: Unknown command '{args.command}'")
-            sys.exit(1)
+        output_path = Path(f"{channel_history.channel.name}.{output_file_extension}")
+        try:
+            if args.command == "pprint":
+                pretty_print(channel_history, output_path)
+            elif args.command == "markdown":
+                markdown_output = format_as_markdown(channel_history)
+                with open(output_path, "w", encoding="utf-8") as f:
+                    f.write(markdown_output)
+            else:
+                print(f"ERROR: Unknown command '{args.command}'")
+                sys.exit(1)
+        except IOError as e:
+            print(f"ERROR: Failed to write to {output_path}: {e}")
+            continue
 
         if not args.quiet:
-            print(f"Wrote data for channel {channel_id} to {args.output}")
+            print(f"Wrote data for channel {channel_id} to {output_path}")
 
 
 def _parse_args(args: list[str]) -> argparse.Namespace:
-    """Defines the argument parser and returns parsed result from given argument"""
+    """
+    Defines and parses command-line arguments.
+
+    Args:
+        args: A list of command-line arguments, excluding the program name.
+
+    Returns:
+        An argparse.Namespace object containing the parsed command-line arguments.
+    """
     my_arg_parser = argparse.ArgumentParser(
         description="Pulls a Slack channel's history and converts it to various formats.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -128,14 +134,6 @@ def _parse_args(args: list[str]) -> argparse.Namespace:
             "Defaults to this process's timezone. (It is an error if no timezone is specified and the user's timezone is not known.)\n"
             "If not provided, will start with the latest message in the channel.\n"
         ),
-    )
-
-    # Output file
-    my_arg_parser.add_argument(
-        "-o",
-        "--output",
-        help="Specify an output file path.",
-        default="channel_data.txt",
     )
 
     # Timezone and locale
@@ -185,8 +183,19 @@ def _parse_args(args: list[str]) -> argparse.Namespace:
     return my_arg_parser.parse_args(args)
 
 
-def _parse_slack_token(args):
-    """Try to take slack token from optional argument or environment variable."""
+def _parse_slack_token(args: argparse.Namespace) -> str:
+    """
+    Retrieves the Slack token from command-line arguments or environment variables.
+
+    Args:
+        args: Parsed command-line arguments.
+
+    Returns:
+        The Slack token as a string.
+
+    Raises:
+        SystemExit: If no Slack token is provided either as an argument or in the environment.
+    """
     if args.token is None:
         if "SLACK_TOKEN" in os.environ:
             slack_token = os.environ["SLACK_TOKEN"]
@@ -198,7 +207,19 @@ def _parse_slack_token(args):
     return slack_token
 
 
-def _parse_formatter_timezone(args):
+def _parse_formatter_timezone(args: argparse.Namespace) -> Optional[zoneinfo.ZoneInfo]:
+    """
+    Parses and returns the formatter timezone specified in the command-line arguments.
+
+    Args:
+        args: Parsed command-line arguments.
+
+    Returns:
+        A zoneinfo.ZoneInfo object representing the specified timezone, or None if not specified.
+
+    Raises:
+        SystemExit: If an unknown or invalid timezone is specified.
+    """
     if args.formatter_timezone is not None:
         try:
             tz = zoneinfo.ZoneInfo(args.formatter_timezone)
@@ -210,7 +231,19 @@ def _parse_formatter_timezone(args):
     return tz
 
 
-def _parse_formatter_locale(args):
+def _parse_formatter_locale(args: argparse.Namespace) -> Optional[Locale]:
+    """
+    Parses and returns the formatter locale specified in the command-line arguments.
+
+    Args:
+        args: Parsed command-line arguments.
+
+    Returns:
+        A babel.Locale object representing the specified locale, or None if not specified.
+
+    Raises:
+        SystemExit: If an unknown or invalid locale is specified.
+    """
     if args.formatter_locale is not None:
         try:
             locale = Locale.parse(args.formatter_locale, sep="-")
@@ -222,22 +255,22 @@ def _parse_formatter_locale(args):
     return locale
 
 
-def _parse_datetime_argument(cli_datetime_str, process_timezone=None):
+def _parse_datetime_argument(
+    cli_datetime_str: Optional[str], process_timezone: Optional[dt.tzinfo] = None
+) -> Optional[dt.datetime]:
     """
-    Parses a date-time string from the CLI, taking into account optional timezone information.
-    Attempts to discover the process's timezone if no none is specified in the string nor as `process_timezone`.
+    Parses a date-time string from the CLI, considering optional timezone information.
 
     Args:
         cli_datetime_str: The date-time string to parse, potentially including a timezone offset or name.
-                          If None, returns None to indicate the use of the channel's oldest or latest message.
-        process_timezone: The timezone to use if no timezone is specified in the string. (Defaults to the process's timezone.)
+                          Returns None if this argument is None.
+        process_timezone: The timezone to use if no timezone is specified in the string. Defaults to the process's timezone.
 
     Returns:
         A timezone-aware datetime object, or None if cli_datetime_str is None.
 
     Raises:
-        ValueError: If the date-time string is invalid, the timezone is invalid, or no timezone is specified
-                  and the process's timezone is not known.
+        ValueError: If the date-time string or timezone is invalid, or no timezone is specified and the process's timezone is not known.
     """
     if cli_datetime_str is None:
         return None
@@ -289,9 +322,18 @@ def _parse_datetime_argument(cli_datetime_str, process_timezone=None):
     return datetime_obj
 
 
-def pretty_print(formatted_data: ChannelHistory, dest_path: Path):
-    """Pretty-prints the Python intermediate data structures to a file."""
-    with open(dest_path, "w", encoding="utf-16") as f:
+def pretty_print(formatted_data: ChannelHistory, dest_path: Path) -> None:
+    """
+    Pretty-prints the Python intermediate data structures to a file.
+
+    Args:
+        formatted_data: The data structure containing the channel history to be printed.
+        dest_path: The file path where the pretty-printed data will be written.
+
+    Raises:
+        IOError: If an error occurs during file writing.
+    """
+    with open(dest_path, "w", encoding="utf-8") as f:
         f.write(pformat(formatted_data))
         f.write("\n")
 

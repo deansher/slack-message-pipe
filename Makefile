@@ -14,7 +14,7 @@ dev: ## Set up the development environment
 	pip install --upgrade pip && \
 	pip install tox flit && \
 	flit install --symlink
-	
+
 clean-dev: ## Clean up the development environment
 	rm -rf venv
 
