@@ -149,7 +149,7 @@ class SlackService:
         channel_names_raw = self._fetch_pages(
             "conversations_list",
             key="channels",
-            args={"types": "public_channel,private_channel"},
+            args={"types": "public_channel"},
             items_name="channels",
         )
         return {
