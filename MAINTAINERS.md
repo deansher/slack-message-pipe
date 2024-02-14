@@ -86,8 +86,7 @@ To push a new release, follow these steps:
 
 1. Update the version number in `slack_message_pipe/__init__.py`.
 2. Commit the changes.
-3. Tag the commit with the version number.
-4. Create a new release on GitHub.
+3. Create a new release on GitHub, creating a new version tag with the same version number.
 
 ## Contributing
 
