@@ -80,11 +80,18 @@ For a list of all available `make` commands and their descriptions, run:
 make help
 ```
 
+## Pushing a Release
+
+To push a new release, follow these steps:
+
+1. Update the version number in `slack_message_pipe/__init__.py`.
+2. Commit the changes.
+3. Tag the commit with the version number.
+4. Create a new release on GitHub.
+
 ## Contributing
 
 We welcome contributions from the community. Please ensure you run tests and lint checks before submitting a pull request. If you're adding new features or making significant changes, consider updating the documentation accordingly.
-
-For more detailed contribution guidelines, refer to `CONTRIBUTING.md`.
 
 ## Questions or Issues
 
