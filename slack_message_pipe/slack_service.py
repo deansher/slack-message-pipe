@@ -7,16 +7,29 @@
 
 import datetime
 import logging
+import time
 from pprint import pformat
 from typing import Optional, TypedDict, cast
 
 import slack_sdk
 from babel.numbers import format_decimal
+from slack_sdk.errors import SlackApiError
 
 from slack_message_pipe import settings
 from slack_message_pipe.locales import LocaleHelper
 
 logger = logging.getLogger(__name__)
+
+
+MAX_SLACK_RATE_LIMIT_RETRIES = 5
+
+
+class ExceededMaxRetriesException(Exception):
+    """Exception raised when the maximum number of retries is exceeded."""
+
+    def __init__(self, message="Max retries reached for Slack API call"):
+        self.message = message
+        super().__init__(self.message)
 
 
 class SlackMessage(TypedDict, total=False):
@@ -34,7 +47,6 @@ class SlackMessage(TypedDict, total=False):
     attachments: list[dict]
     blocks: list[dict]
     mrkdwn: bool
-    # Include other fields as needed
 
 
 class SlackService:
@@ -103,7 +115,7 @@ class SlackService:
     def _fetch_workspace_info(self) -> dict:
         """Fetch and return information about the current workspace."""
         logger.info("Fetching workspace info from Slack...")
-        response = self._client.auth_test()
+        response = self._execute_with_rate_limit_handling(self._client.auth_test)
         try:
             result = response.data
             assert isinstance(
@@ -127,7 +139,9 @@ class SlackService:
     def _fetch_user_info(self, user_id: str) -> dict:
         """Fetch and return information for a given user ID, including locale."""
         logger.info("Fetching user info for %s...", user_id)
-        response = self._client.users_info(user=user_id, include_locale=True)
+        response = self._execute_with_rate_limit_handling(
+            self._client.users_info, user=user_id, include_locale=True
+        )
         return response["user"]
 
     def _fetch_channel_names(self) -> dict[str, str]:
@@ -148,7 +162,7 @@ class SlackService:
     def _fetch_usergroup_names(self) -> dict[str, str]:
         """Fetch and return a dictionary mapping usergroup IDs to usergroup names."""
         logger.info("Fetching usergroups from Slack...")
-        response = self._client.usergroups_list()
+        response = self._execute_with_rate_limit_handling(self._client.usergroups_list)
         usergroup_names = self._reduce_to_dict(response["usergroups"], "id", "handle")
         result = {usergroup: name for usergroup, name in usergroup_names.items()}
         logger.info(
@@ -252,7 +266,9 @@ class SlackService:
         args = args or {}
         limit = limit or settings.SLACK_PAGE_LIMIT
         base_args = {**args, "limit": limit}
-        response = getattr(self._client, method)(**base_args)
+        response = self._execute_with_rate_limit_handling(
+            getattr(self._client, method), **base_args
+        )
         rows = response[key]
 
         while (
@@ -266,7 +282,9 @@ class SlackService:
                 **base_args,
                 "cursor": response["response_metadata"].get("next_cursor"),
             }
-            response = getattr(self._client, method)(**page_args)
+            response = self._execute_with_rate_limit_handling(
+                getattr(self._client, method), **page_args
+            )
             rows += response[key]
 
         if print_result:
@@ -314,7 +332,9 @@ class SlackService:
         if len(bot_ids) > 0:
             logger.info("Fetching names for %d bots", len(bot_ids))
             for bot_id in bot_ids:
-                response = self._client.bots_info(bot=bot_id)
+                response = self._execute_with_rate_limit_handling(
+                    self._client.bots_info, bot=bot_id
+                )
                 if response["ok"]:
                     bot_names[bot_id] = response["bot"]["name"]
         return bot_names
@@ -348,3 +368,18 @@ class SlackService:
                 elif col_name_secondary and col_name_secondary in item:
                     result[key] = item[col_name_secondary]
         return result
+
+    def _execute_with_rate_limit_handling(self, api_call, *args, **kwargs):
+        for _ in range(MAX_SLACK_RATE_LIMIT_RETRIES):
+            try:
+                return api_call(*args, **kwargs)
+            except SlackApiError as e:
+                if e.response.headers.get("Retry-After"):
+                    wait_time = int(e.response.headers["Retry-After"])
+                    logger.warning(
+                        f"Rate limit hit. Retrying in {wait_time} seconds... (Exception was {e})"
+                    )
+                    time.sleep(wait_time)
+                else:
+                    raise  # Re-raise the exception if it's not a rate limit error
+        raise ExceededMaxRetriesException()
