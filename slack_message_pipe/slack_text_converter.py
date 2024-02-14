@@ -87,7 +87,7 @@ class SlackTextConverter:
         """Transforms a user group mention into a markdown user group name."""
         usergroup_id = usergroup_match.split("^")[1]
         usergroup_name = self._slack_service.usergroup_names().get(
-            usergroup_id, f"usergroup_{usergroup_id}"
+            usergroup_id, f"unknown_private_channel"
         )
         return f"@{usergroup_name}"
 

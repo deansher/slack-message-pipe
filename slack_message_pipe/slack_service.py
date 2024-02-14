@@ -66,6 +66,7 @@ class SlackService:
             raise ValueError("slack_token can not be null")
 
         self._client = slack_sdk.WebClient(token=slack_token)
+        self._api_calls_since_last_rate_limit_error = 0
         if not locale_helper:
             locale_helper = LocaleHelper()
         self._locale = locale_helper.locale
@@ -160,16 +161,21 @@ class SlackService:
         }
 
     def _fetch_usergroup_names(self) -> dict[str, str]:
-        """Fetch and return a dictionary mapping usergroup IDs to usergroup names."""
-        logger.info("Fetching usergroups from Slack...")
-        response = self._execute_with_rate_limit_handling(self._client.usergroups_list)
-        usergroup_names = self._reduce_to_dict(response["usergroups"], "id", "handle")
-        result = {usergroup: name for usergroup, name in usergroup_names.items()}
-        logger.info(
-            "Got a total of %s usergroups for this workspace",
-            format_decimal(len(usergroup_names), locale=self._locale),
-        )
-        return result
+        """
+        Fetch and return a dictionary mapping usergroup IDs to usergroup names.
+        Does nothing as of this writing, because we may not have the access.
+        TODO: either dynamically retrieve our authorized scopes or make it configurable
+        """
+        return {}
+        # logger.info("Fetching usergroups from Slack...")
+        # response = self._execute_with_rate_limit_handling(self._client.usergroups_list)
+        # usergroup_names = self._reduce_to_dict(response["usergroups"], "id", "handle")
+        # result = {usergroup: name for usergroup, name in usergroup_names.items()}
+        # logger.info(
+        #     "Got a total of %s usergroups for this workspace",
+        #     format_decimal(len(usergroup_names), locale=self._locale),
+        # )
+        # return result
 
     def fetch_messages_from_channel(
         self,
@@ -370,16 +376,22 @@ class SlackService:
         return result
 
     def _execute_with_rate_limit_handling(self, api_call, *args, **kwargs):
-        for _ in range(MAX_SLACK_RATE_LIMIT_RETRIES):
+        for attempt in range(MAX_SLACK_RATE_LIMIT_RETRIES):
             try:
-                return api_call(*args, **kwargs)
+                result = api_call(*args, **kwargs)
+                if attempt > 0:
+                    logger.warning("...succeeded on rate-limit retry.")
+                self._api_calls_since_last_rate_limit_error += 1
+                return result
             except SlackApiError as e:
                 if e.response.headers.get("Retry-After"):
                     wait_time = int(e.response.headers["Retry-After"])
                     logger.warning(
-                        f"Rate limit hit. Retrying in {wait_time} seconds... (Exception was {e})"
+                        f"Rate limit hit after {self._api_calls_since_last_rate_limit_error} successful calls. " 
+                        f"Exception was {e}. Retrying in {wait_time} seconds..."
                     )
                     time.sleep(wait_time)
+                    self._api_calls_since_last_rate_limit_error = 0
                 else:
                     raise  # Re-raise the exception if it's not a rate limit error
         raise ExceededMaxRetriesException()
