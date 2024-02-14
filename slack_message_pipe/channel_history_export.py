@@ -71,6 +71,9 @@ class ChannelHistoryExporter:
         latest: Optional[dt.datetime] = None,
         max_messages: Optional[int] = None,
     ) -> ChannelHistory:
+        """
+        Fetches and formats data from Slack API into intermediate data structures.
+        """
         logger.debug(
             f"{self.__class__.__name__}.fetch_and_format_channel_data: Processing channel {channel_id}"
         )
@@ -82,6 +85,9 @@ class ChannelHistoryExporter:
                 channel_id, top_level_slack_messages, max_messages, oldest, latest
             )
 
+            # Reverse the order of top-level messages to be in chronological order
+            top_level_slack_messages.reverse()
+
             top_level_messages = [
                 self._format_message(sm) for sm in top_level_slack_messages
             ]
@@ -90,6 +96,8 @@ class ChannelHistoryExporter:
             for thread_ts, thread_messages in threads_by_ts.items():
                 parent_message = parent_messages_by_ts.get(thread_ts)
                 if parent_message:
+                    # Reverse the order of thread messages to be in chronological order
+                    thread_messages.reverse()
                     for reply_slack_message in thread_messages:
                         if reply_slack_message["ts"] != thread_ts:
                             reply_message = self._format_message(reply_slack_message)
@@ -270,38 +278,35 @@ class ChannelHistoryExporter:
 
     def _format_attachment(self, attachment: dict[str, Any]) -> Attachment:
         """Formats an attachment from Slack API data into an Attachment data class."""
+        # TODO: See whether any of these fields have indicators as to whether they are markdown.
         try:
-            logger.debug(
-                f"{self.__class__.__name__}._format_attachment: Slack API data received:"
+            # Convert title and footer using SlackTextConverter
+            title = self._slack_text_converter.convert_slack_text(
+                attachment.get("title", ""), is_markdown=True
             )
-            logger.debug(pformat(attachment))
+            footer = self._slack_text_converter.convert_slack_text(
+                attachment.get("footer", ""), is_markdown=True
+            )
 
-            is_markdown = "text" in attachment.get("mrkdwn_in", [])
             formatted_attachment = Attachment(
                 fallback=attachment.get("fallback", ""),
                 markdown=self._slack_text_converter.convert_slack_text(
-                    attachment.get("text", ""), is_markdown=is_markdown
+                    attachment.get("text", ""), is_markdown=True
                 ),
                 pretext=attachment.get("pretext", ""),
-                title=attachment.get("title", ""),
+                title=title,
                 title_link=attachment.get("title_link", ""),
                 author_name=attachment.get("author_name", ""),
-                footer=attachment.get("footer", ""),
+                footer=footer,
                 image_url=attachment.get("image_url", ""),
                 color=attachment.get("color", ""),
             )
 
-            logger.debug(
-                f"{self.__class__.__name__}._format_attachment: Intermediate data produced:"
-            )
-            logger.debug(pformat(formatted_attachment))
-
             return formatted_attachment
         except Exception as e:
             logger.warning(
-                f"Failed to format attachment from Slack API data. Error: {e}. Returning default Attachment object."
+                f"Failed to format attachment from Slack API data. Error: {e}."
             )
-            # Return a default Attachment object in case of failure
             return Attachment(
                 fallback="",
                 markdown="",

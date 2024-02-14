@@ -73,33 +73,38 @@ Currently, the cli is just for testing. It exports the data as pretty printed py
 You can provide the Slack token either as command line argument `--token` or by setting the environment variable `SLACK_TOKEN`.
 
 ```text
-usage: slack-message-pipe [-h] [--token TOKEN] [--oldest OLDEST] [--latest LATEST] [-o OUTPUT] [--formatter_timezone FORMATTER_TIMEZONE]
-                          [--formatter_locale FORMATTER_LOCALE] [--version] [--max-messages MAX_MESSAGES] [--quiet]
-                          {pprint,markdown} channel_id [channel_id ...]
+Logging to file: slack_message_pipe.log
+usage: slack-message-pipe [-h] [--token TOKEN] [--formatter_timezone FORMATTER_TIMEZONE] [--formatter_locale FORMATTER_LOCALE] [--version]
+                          [--max-messages MAX_MESSAGES] [--quiet]
+                          {pprint,markdown} oldest latest channel_id [channel_id ...]
 
-Pulls a Slack channel's history and converts it to various formats.
+A tool for reading a Slack channel's message history and converting it to various formats.
+The output is written to a file with the same name as the channel and the date range.
+
+Example: slack-message-pipe markdown "2024-01-01 00:00" now C0423S252BH
+
+For more information, see the README: https://github.com/dean-thompson/slack-message-pipe
 
 positional arguments:
   {pprint,markdown}     Action to take on the data
+  oldest                Oldest timestamp from which to load messages; format: YYYY-MM-DD HH:MM [timezone]
+                        Defaults to this processe's timezone. (It is an error if no timezone is specified and the process's timezone is not known.)
+  latest                Latest timestamp from which to load messages; format: YYYY-MM-DD HH:MM [timezone] or 'now'
+                        Defaults to this process's timezone. (It is an error if no timezone is specified and the user's timezone is not known.)
+                        If not provided, will process messages up to the current time.
   channel_id            One or several: ID of channel to export.
 
 options:
   -h, --help            show this help message and exit
-  --token TOKEN         Slack OAuth token (default from environment variable `SLACK_TOKEN`)
-  --oldest OLDEST       Oldest timestamp from which to load messages; format: YYYY-MM-DD HH:MM (default: None)
-  --latest LATEST       Latest timestamp from which to load messages; format: YYYY-MM-DD HH:MM (default: None)
-  -o OUTPUT, --output OUTPUT
-                        Specify an output file path. (default: channel_data.txt)
+  --token TOKEN         Slack OAuth token. Can instead be provided in the environment variable SLACK_TOKEN.
   --formatter_timezone FORMATTER_TIMEZONE
-                        Manually set the timezone to be used for formatting dates and times, such as 'Europe/Berlin'. Use a timezone name as defined here:
-                        https://en.wikipedia.org/wiki/List_of_tz_database_time_zonesDefaults to the process timezone. (default: None)
+                        Manually set the timezone to be used for formatting dates and times, such as 'Europe/Berlin'. Use a timezone name as defined here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zonesDefaults to the process timezone.
   --formatter_locale FORMATTER_LOCALE
-                        Manually set the locale to be used for formatting, with a IETF language tag, e.g. 'de-DE' for Germany. See this page for a list of
-                        valid tags: https://en.wikipedia.org/wiki/IETF_language_tag . Defaults to the process locale. (default: None)
+                        Manually set the locale to be used for formatting, with a IETF language tag, e.g. 'de-DE' for Germany. See this page for a list of valid tags: https://en.wikipedia.org/wiki/IETF_language_tag . Defaults to the process locale.
   --version             Show the program version and exit
   --max-messages MAX_MESSAGES
-                        Max number of messages to export (default: 10000)
-  --quiet               When provided will not generate normal console output, but still show errors (default: False)
+                        Max number of messages to export
+  --quiet               When provided will not generate normal console output, but still show errors
 ```
 
 ## Configuration

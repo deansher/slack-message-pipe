@@ -111,6 +111,8 @@ class SlackTextConverter:
         parts = url_match.split("|")
         if len(parts) == 2:
             url, text = parts
+            url = url.strip()
+            text = text.strip()
         else:
-            url = text = parts[0]
+            url = text = parts[0].strip()
         return f"[{text}]({url})"

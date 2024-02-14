@@ -26,7 +26,7 @@ from slack_message_pipe import __version__, settings
 
 # Import the new SlackDataFormatter
 from slack_message_pipe.channel_history_export import ChannelHistoryExporter
-from slack_message_pipe.format_as_markdown import format_as_markdown
+from slack_message_pipe.format_as_markdown import Config, format_as_markdown
 from slack_message_pipe.intermediate_data import ChannelHistory
 from slack_message_pipe.locales import LocaleHelper
 from slack_message_pipe.slack_service import SlackService
@@ -75,12 +75,19 @@ def main():
             latest=latest,
             max_messages=args.max_messages,
         )
-        output_path = Path(f"{channel_history.channel.name}.{output_file_extension}")
+        datetime_format = "%Y%m%d_%H%M"
+        oldest_str = oldest.strftime(datetime_format)
+        latest_str = latest.strftime(datetime_format)
+        output_path = Path(
+            f"{channel_history.channel.name}_{oldest_str}_to_{latest_str}.{output_file_extension}"
+        )
         try:
             if args.command == "pprint":
                 pretty_print(channel_history, output_path)
             elif args.command == "markdown":
-                markdown_output = format_as_markdown(channel_history)
+                markdown_output = format_as_markdown(
+                    channel_history, Config(images=args.images)
+                )
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(markdown_output)
             else:
@@ -105,8 +112,14 @@ def _parse_args(args: list[str]) -> argparse.Namespace:
         An argparse.Namespace object containing the parsed command-line arguments.
     """
     my_arg_parser = argparse.ArgumentParser(
-        description="Pulls a Slack channel's history and converts it to various formats.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description=(
+            "A tool for reading a Slack channel's message history and converting it to various formats.\n"
+            "The output is written to a file with the same name as the channel and the date range.\n"
+            "\n"
+            'Example: slack-message-pipe markdown "2024-01-01 00:00" now C0423S252BH\n\n'
+            "For more information, see the README: https://github.com/dean-thompson/slack-message-pipe"
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
     )
 
     # main arguments
@@ -116,24 +129,30 @@ def _parse_args(args: list[str]) -> argparse.Namespace:
         choices=["pprint", "markdown"],
     )
     my_arg_parser.add_argument(
-        "channel_id", help="One or several: ID of channel to export.", nargs="+"
-    )
-    my_arg_parser.add_argument("--token", help="Slack OAuth token")
-    my_arg_parser.add_argument(
-        "--oldest",
+        "oldest",
         help=(
             "Oldest timestamp from which to load messages; format: YYYY-MM-DD HH:MM [timezone]\n"
             "Defaults to this processe's timezone. (It is an error if no timezone is specified and the process's timezone is not known.)\n"
-            "If not provided, will start with the oldest message in the channel.\n"
         ),
     )
     my_arg_parser.add_argument(
-        "--latest",
+        "latest",
         help=(
-            "Latest timestamp from which to load messages; format: YYYY-MM-DD HH:MM [timezone]\n"
+            "Latest timestamp from which to load messages; format: YYYY-MM-DD HH:MM [timezone] or 'now'\n"
             "Defaults to this process's timezone. (It is an error if no timezone is specified and the user's timezone is not known.)\n"
-            "If not provided, will start with the latest message in the channel.\n"
+            "If not provided, will process messages up to the current time.\n"
         ),
+    )
+    my_arg_parser.add_argument(
+        "channel_id", help="One or several: ID of channel to export.", nargs="+"
+    )
+    my_arg_parser.add_argument(
+        "--token",
+        help="Slack OAuth token. Can instead be provided in the environment variable SLACK_TOKEN.",
+    )
+
+    my_arg_parser.add_argument(
+        "--images", action="store_true", help="Include images in the markdown output"
     )
 
     # Timezone and locale
@@ -257,23 +276,32 @@ def _parse_formatter_locale(args: argparse.Namespace) -> Optional[Locale]:
 
 def _parse_datetime_argument(
     cli_datetime_str: Optional[str], process_timezone: Optional[dt.tzinfo] = None
-) -> Optional[dt.datetime]:
+) -> dt.datetime:
     """
-    Parses a date-time string from the CLI, considering optional timezone information.
+    Parses a date-time string from the CLI, considering optional timezone information and special values.
+
+    This function supports a special value "now" to represent the current datetime. If the input string is "now",
+    the function returns the current datetime with the timezone set to the process's timezone or the sp ecified
+    timezone. For other inputs, it attempts to parse the string into a datetime object, applying the specified
+    or process's timezone if no timezone information is included in the string.
 
     Args:
-        cli_datetime_str: The date-time string to parse, potentially including a timezone offset or name.
-                          Returns None if this argument is None.
-        process_timezone: The timezone to use if no timezone is specified in the string. Defaults to the process's timezone.
+        cli_datetime_str: The date-time string to parse, potentially including a timezone offset or name, or the
+                          special value "now". Returns the current time if this argument is None.
+        process_timezone: The timezone to use if no timezone is specified in the string or for the "now" value.
+                          Defaults to the process's timezone.
 
     Returns:
-        A timezone-aware datetime object, or None if cli_datetime_str is None.
+        A timezone-aware datetime object representing the specified datetime, the current datetime if "now" is
+        specified, or None if cli_datetime_str is None.
 
     Raises:
-        ValueError: If the date-time string or timezone is invalid, or no timezone is specified and the process's timezone is not known.
+        ValueError: If the date-time string is invalid, the specified timezone is invalid, no timezone is specified
+                    and the process's timezone is not known, or if the process's timezone cannot be determined for
+                    the "now" value.
     """
-    if cli_datetime_str is None:
-        return None
+    if cli_datetime_str is None or cli_datetime_str.lower() == "now":
+        return dt.datetime.now(tz=process_timezone)
 
     if process_timezone is None:
         process_timezone = get_localzone()
