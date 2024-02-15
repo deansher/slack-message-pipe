@@ -7,7 +7,13 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from slack_message_pipe.intermediate_data import Attachment, ChannelHistory, Message
+from slack_message_pipe.intermediate_data import (
+    UNKNOWN_USER,
+    Attachment,
+    ChannelHistory,
+    File,
+    Message,
+)
 
 # Throughout this file, whenever a function formats something that should be its own paragraph,
 # it includes two trailing new lines.
@@ -35,21 +41,24 @@ def format_as_markdown(history: ChannelHistory, config: Config) -> str:
 
 def format_message(message: Message, heading_level: int, config: Config) -> str:
     """Formats a Message object into human-readable Markdown, including a header."""
-    user_display = message.user.name if message.user else "Unknown User"
-    header = f"{'#' * heading_level} {user_display} ({message.ts_display})"
+    user = message.user or UNKNOWN_USER
+
+    # TODO: use slack_text_converter._format_user_mention for this
+    bot_prefix = "bot: " if user.is_bot else ""
+    user_display = f"@{user.name} ({bot_prefix}{user.real_name})"
+
+    header = f"{'#' * heading_level} {user_display} {message.ts_display}"
     output = f"{header}\n\n{message.markdown}\n\n"
 
     # Attachments (Slack's legacy method)
-    if message.attachments:
-        for attachment in message.attachments:
-            output += format_attachment(
-                attachment, heading_level=heading_level + 1, config=config
-            )
+    for attachment in message.attachments:
+        output += format_attachment(
+            attachment, heading_level=heading_level + 1, config=config
+        )
 
     # Files
-    if message.files:
-        for file in message.files:
-            output += f"* [{file.title or file.name}]({file.url})\n\n"
+    for file in message.files:
+        output += format_file(file, heading_level=heading_level + 1, config=config)
 
     # Reactions
     if message.reactions:
@@ -86,10 +95,8 @@ def format_attachment(
         attachment: The Attachment object to format.
         heading_level: The Markdown heading level for the attachment title (default is 4).
     """
-    # Determine the heading prefix based on the specified level
     heading_prefix = "#" * heading_level
-
-    output = f"{heading_prefix} Attachment\n\n"  # Use the dynamic heading level
+    output = f"{heading_prefix} Attachment\n\n"
 
     if attachment.pretext:
         output += f"{attachment.pretext}\n\n"
@@ -109,4 +116,17 @@ def format_attachment(
     if config.images and attachment.image_url:
         output += f"![image]({attachment.image_url})\n\n"
 
+    return output
+
+
+def format_file(file: File, heading_level: int, config: Config) -> str:
+    heading_prefix = "#" * heading_level
+    file_name_display = file.title or file.name or ""
+    file_display = (
+        f"[{file_name_display}]({file.url})" if file.url else file_name_display
+    )
+    output = f"{heading_prefix} File: {file_display}\n\n"
+    if file.preview:
+        output += file.preview
+        output += "\n\n"
     return output

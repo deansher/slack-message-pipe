@@ -45,10 +45,6 @@ def main():
     oldest = _parse_datetime_argument(args.oldest)
     latest = _parse_datetime_argument(args.latest)
 
-    if not args.quiet:
-        channel_postfix = "s" if args.channel_id and len(args.channel_id) > 1 else ""
-        print(f"Formatting data for channel{channel_postfix} from Slack...")
-
     try:
         slack_service = SlackService(
             slack_token=slack_token,
@@ -58,7 +54,9 @@ def main():
             slack_service=slack_service,
             locale_helper=LocaleHelper(formatter_locale, formatter_timezone),
         )
-        formatter = ChannelHistoryExporter(
+        if not args.quiet:
+            print("Pulling metadata such as user and channel names from Slack...")
+        exporter = ChannelHistoryExporter(
             slack_service=slack_service,
             locale_helper=LocaleHelper(formatter_locale, formatter_timezone),
             slack_text_converter=message_to_markdown,
@@ -69,7 +67,9 @@ def main():
 
     output_file_extension = "md" if args.command == "markdown" else "txt"
     for channel_id in args.channel_id:
-        channel_history = formatter.fetch_and_format_channel_data(
+        if not args.quiet:
+            print(f"Exporting history from channel {channel_id}...")
+        channel_history = exporter.fetch_and_format_channel_data(
             channel_id=channel_id,
             oldest=oldest,
             latest=latest,

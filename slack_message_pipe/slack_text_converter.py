@@ -5,10 +5,14 @@
 # Copyright (c) 2019 Erik Kalkoken
 # Copyright (c) 2024 Dean Thompson
 
+import logging
 import re
 
+from slack_message_pipe.intermediate_data import UNKNOWN_USER
 from slack_message_pipe.locales import LocaleHelper
 from slack_message_pipe.slack_service import SlackService
+
+logger = logging.getLogger(__name__)
 
 
 class SlackTextConverter:
@@ -57,10 +61,10 @@ class SlackTextConverter:
         match = match_obj.group(1)
 
         if match.startswith("@U") or match.startswith("@W"):
-            return self._process_user_id(match[1:])
+            return self._format_user_mention(match[1:])
 
         elif match.startswith("#C"):
-            return self._process_channel_id(match[1:])
+            return self._format_channel_mention(match[1:])
 
         elif match.startswith("!subteam^"):
             return self._process_user_group_id(match)
@@ -71,23 +75,28 @@ class SlackTextConverter:
         else:
             return self._process_url(match)
 
-    def _process_user_id(self, user_id: str) -> str:
+    def _format_user_mention(self, user_id: str) -> str:
         """Transforms a user ID into a markdown mention."""
-        user_name = self._slack_service.user_names().get(user_id, f"user_{user_id}")
-        return f"@{user_name}"
+        user = self._slack_service.user_data().get(user_id, UNKNOWN_USER)
+        bot_prefix = "bot: " if user.is_bot else ""
+        return f"@{user.name} ({bot_prefix}{user.real_name})"
 
-    def _process_channel_id(self, channel_id: str) -> str:
-        """Transforms a channel ID into a markdown channel name."""
-        channel_name = self._slack_service.channel_names().get(
-            channel_id, f"channel_{channel_id}"
-        )
-        return f"#{channel_name}"
+    def _format_channel_mention(self, mention_target: str) -> str:
+        """Transforms a channel mention_target like "CQRPRM0UW|dia" into mention like #dia."""
+        pieces = mention_target.split("|")
+        if len(pieces) == 2:
+            return f"#{pieces[1]}"
+        else:
+            logger.warning(
+                f"{self.__class__.__name__}._format_channel_mention: unexpected mention target format '{mention_target}'"
+            )
+            return f"#{mention_target}"
 
     def _process_user_group_id(self, usergroup_match: str) -> str:
         """Transforms a user group mention into a markdown user group name."""
         usergroup_id = usergroup_match.split("^")[1]
         usergroup_name = self._slack_service.usergroup_names().get(
-            usergroup_id, f"unknown_private_channel"
+            usergroup_id, "unknown_private_channel"
         )
         return f"@{usergroup_name}"
 

@@ -6,11 +6,11 @@
 
 import datetime as dt
 import logging
-import re
 from pprint import pformat
 from typing import Any, Optional
 
 from slack_message_pipe.intermediate_data import (
+    UNKNOWN_USER,
     ActionsBlock,
     Attachment,
     Block,
@@ -45,7 +45,7 @@ from slack_message_pipe.intermediate_data import (
     User,
 )
 from slack_message_pipe.locales import LocaleHelper
-from slack_message_pipe.slack_service import SlackMessage, SlackService
+from slack_message_pipe.slack_service import SlackMessage, SlackService, SlackUser
 from slack_message_pipe.slack_text_converter import SlackTextConverter
 
 logger = logging.getLogger(__name__)
@@ -111,10 +111,8 @@ class ChannelHistoryExporter:
             return ChannelHistory(
                 channel=channel, top_level_messages=top_level_messages
             )
-        except Exception as e:
-            logger.error(
-                "Error fetching and formatting channel data: %s", str(e), exc_info=True
-            )
+        except Exception:
+            logger.error("Error fetching and formatting channel data.", exc_info=True)
             raise
 
     def _format_message(self, msg: SlackMessage) -> Message:
@@ -128,10 +126,14 @@ class ChannelHistoryExporter:
             user: Optional[User] = None
             user_id = msg.get("user") or msg.get("bot_id")
             if user_id:
-                user_name = self._slack_service.user_names().get(
-                    user_id, f"unknown_user_{user_id}"
-                )
-                user = User(id=user_id, name=user_name)
+                slack_user = self._slack_service.user_data().get(user_id)
+                if slack_user:
+                    user = User(
+                        id=user_id,
+                        name=slack_user.name,
+                        real_name=slack_user.real_name,
+                        is_bot=slack_user.is_bot,
+                    )
 
             ts = msg["ts"]
             thread_ts = msg.get("thread_ts")
@@ -146,11 +148,19 @@ class ChannelHistoryExporter:
             reactions = [
                 self._format_reaction(reaction) for reaction in msg.get("reactions", [])
             ]
-            files = [self._format_file(file) for file in msg.get("files", [])]
-            attachments = [
-                self._format_attachment(attachment)
-                for attachment in msg.get("attachments", [])
-            ]
+
+            files = []
+            for slack_file in msg.get("files", []):
+                formatted_file = self._format_file(slack_file)
+                if formatted_file:
+                    files.append(formatted_file)
+
+            attachments = []
+            for slack_attachment in msg.get("attachments", []):
+                formatted_attachment = self._format_attachment(slack_attachment)
+                if formatted_attachment:
+                    attachments.append(formatted_attachment)
+
             blocks = [self._format_block(block) for block in msg.get("blocks", [])]
 
             formatted_message = Message(
@@ -173,11 +183,11 @@ class ChannelHistoryExporter:
             logger.debug(pformat(formatted_message))
 
             return formatted_message
-        except Exception as e:
-            logger.warning(f"Failed to format message: {pformat(msg)}. Error: {e}")
+        except Exception:
+            logger.warning(f"Failed to format message: {pformat(msg)}", exc_info=True)
             # Return a placeholder message indicating an issue with formatting
             return Message(
-                user=User(id="unknown", name="Unknown User"),
+                user=UNKNOWN_USER,
                 ts="0",
                 thread_ts=None,
                 ts_display="N/A",
@@ -197,9 +207,10 @@ class ChannelHistoryExporter:
             dt_obj = dt.datetime.fromtimestamp(float(ts), tz=dt.timezone.utc)
             formatted_ts = dt_obj.strftime("%Y-%m-%d %H:%M:%S %Z")
             return formatted_ts
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to convert Slack timestamp {ts} to display format. Error: {e}"
+                f"Failed to convert Slack timestamp {ts} to display format.",
+                exc_info=True,
             )
             # Return a placeholder or the original timestamp in case of failure
             return "Invalid Timestamp"
@@ -224,12 +235,14 @@ class ChannelHistoryExporter:
             logger.debug(pformat(formatted_reaction))
 
             return formatted_reaction
-        except Exception as e:
-            logger.warning(f"Failed to format reaction from Slack API data. Error: {e}")
+        except Exception:
+            logger.warning(
+                "Failed to format reaction from Slack API data.", exc_info=True
+            )
             # Return a default Reaction object in case of failure
             return Reaction(name="", count=0, user_ids=[])
 
-    def _format_file(self, file: dict[str, Any]) -> File:
+    def _format_file(self, file: dict[str, Any]) -> Optional[File]:
         """Formats a file from Slack API data into a File data class."""
         try:
             logger.debug(
@@ -237,21 +250,29 @@ class ChannelHistoryExporter:
             )
             logger.debug(pformat(file))
 
-            formatted_file = File(
-                id=file["id"],
-                url=file["url_private"],
-                name=file["name"],
-                filetype=file["filetype"],
-                title=file.get("title", ""),
-                mimetype=file.get("mimetype", ""),
-                size=file.get("size", 0),
-                timestamp=(
-                    dt.datetime.fromtimestamp(
-                        float(file["timestamp"]), tz=self._locale_helper.timezone
-                    )
-                    if "timestamp" in file
-                    else None
-                ),
+            url = file.get("url_private") or None
+            name = file.get("name")
+            title = file.get("title", "")
+
+            formatted_file = (
+                File(
+                    id=file["id"],
+                    url=url,
+                    name=name,
+                    filetype=file["filetype"],
+                    title=title,
+                    mimetype=file.get("mimetype", ""),
+                    size=file.get("size", 0),
+                    timestamp=(
+                        dt.datetime.fromtimestamp(
+                            float(file["timestamp"]), tz=self._locale_helper.timezone
+                        )
+                        if "timestamp" in file
+                        else None
+                    ),
+                )
+                if url or name or title
+                else None
             )
 
             logger.debug(
@@ -260,64 +281,69 @@ class ChannelHistoryExporter:
             logger.debug(pformat(formatted_file))
 
             return formatted_file
-        except Exception as e:
-            logger.warning(
-                f"Failed to format file from Slack API data. Error: {e}. Returning default File object."
-            )
-            # Return a default File object in case of failure
-            return File(
-                id="",
-                url="",
-                name="",
-                filetype="",
-                title="",
-                mimetype="",
-                size=0,
-                timestamp=None,
-            )
+        except Exception:
+            logger.warning("Failed to format file from Slack API data.", exc_info=True)
+            return None
 
-    def _format_attachment(self, attachment: dict[str, Any]) -> Attachment:
+    def _format_attachment(self, attachment: dict[str, Any]) -> Optional[Attachment]:
         """Formats an attachment from Slack API data into an Attachment data class."""
-        # TODO: See whether any of these fields have indicators as to whether they are markdown.
         try:
-            # Convert title and footer using SlackTextConverter
-            title = self._slack_text_converter.convert_slack_text(
-                attachment.get("title", ""), is_markdown=True
+            logger.debug(
+                f"{self.__class__.__name__}._format_attachment: Slack API data received:"
             )
-            footer = self._slack_text_converter.convert_slack_text(
-                attachment.get("footer", ""), is_markdown=True
-            )
+            logger.debug(pformat(attachment))
+
+            # Process blocks for structured data
+            blocks = []
+            markdown_chunks = []
+            if "blocks" in attachment:
+                for slack_block in attachment["blocks"]:
+                    formatted_block = self._format_block(slack_block)
+                    blocks.append(formatted_block)
+
+                    if slack_block.get("type") == "section" and "text" in slack_block:
+                        markdown_text = self._slack_text_converter.convert_slack_text(
+                            slack_block["text"]["text"], is_markdown=True
+                        )
+                        markdown_chunks.append(markdown_text)
+                    if "fields" in slack_block:
+                        for field in slack_block["fields"]:
+                            field_text = self._slack_text_converter.convert_slack_text(
+                                field["text"], is_markdown=True
+                            )
+                            markdown_chunks.append(field_text)
 
             formatted_attachment = Attachment(
                 fallback=attachment.get("fallback", ""),
-                markdown=self._slack_text_converter.convert_slack_text(
-                    attachment.get("text", ""), is_markdown=True
+                markdown="\n".join(markdown_chunks),
+                pretext=self._slack_text_converter.convert_slack_text(
+                    attachment.get("pretext", ""), is_markdown=True
                 ),
-                pretext=attachment.get("pretext", ""),
-                title=title,
+                title=self._slack_text_converter.convert_slack_text(
+                    attachment.get("title", ""), is_markdown=True
+                ),
                 title_link=attachment.get("title_link", ""),
-                author_name=attachment.get("author_name", ""),
-                footer=footer,
+                author_name=self._slack_text_converter.convert_slack_text(
+                    attachment.get("author_name", ""), is_markdown=True
+                ),
+                footer=self._slack_text_converter.convert_slack_text(
+                    attachment.get("footer", ""), is_markdown=True
+                ),
                 image_url=attachment.get("image_url", ""),
                 color=attachment.get("color", ""),
+                blocks=blocks,
             )
 
+            logger.debug(
+                f"{self.__class__.__name__}._format_attachment: Intermediate data produced:"
+            )
+            logger.debug(pformat(formatted_attachment))
             return formatted_attachment
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format attachment from Slack API data. Error: {e}."
+                "Failed to format attachment from Slack API data.", exc_info=True
             )
-            return Attachment(
-                fallback="",
-                markdown="",
-                pretext="",
-                title="",
-                title_link="",
-                author_name="",
-                footer="",
-                image_url="",
-                color="",
-            )
+            return None
 
     def _format_block(self, block: dict[str, Any]) -> Block:
         """Formats a block from Slack API data into a Block data class."""
@@ -352,10 +378,8 @@ class ChannelHistoryExporter:
             logger.debug(pformat(formatted_block))
 
             return formatted_block
-        except Exception as e:
-            logger.warning(
-                f"Failed to format block from Slack API data. Error: {e}. Returning default Block object."
-            )
+        except Exception:
+            logger.warning("Failed to format block from Slack API data.", exc_info=True)
             # Return a default Block object in case of failure
             return Block(type="unknown")
 
@@ -394,9 +418,9 @@ class ChannelHistoryExporter:
             logger.debug(pformat(section_block))
 
             return section_block
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format section block from Slack API data. Error: {e}. Returning default SectionBlock object."
+                "Failed to format section block from Slack API data.", exc_info=True
             )
             return SectionBlock(type="section", text=None, fields=None, accessory=None)
 
@@ -416,9 +440,9 @@ class ChannelHistoryExporter:
             logger.debug(pformat(divider_block))
 
             return divider_block
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format divider block from Slack API data. Error: {e}. Returning default DividerBlock object."
+                "Failed to format divider block from Slack API data.", exc_info=True
             )
             return DividerBlock(type="divider")
 
@@ -448,9 +472,9 @@ class ChannelHistoryExporter:
             logger.debug(pformat(image_block))
 
             return image_block
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format image block from Slack API data. Error: {e}. Returning default ImageBlock object."
+                "Failed to format image block from Slack API data.", exc_info=True
             )
             return ImageBlock(type="image", image_url="", alt_text="")
 
@@ -472,9 +496,9 @@ class ChannelHistoryExporter:
             logger.debug(pformat(actions_block))
 
             return actions_block
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format actions block from Slack API data. Error: {e}. Returning default ActionsBlock object."
+                "Failed to format actions block from Slack API data.", exc_info=True
             )
             return ActionsBlock(type="actions", elements=[])
 
@@ -496,9 +520,9 @@ class ChannelHistoryExporter:
             logger.debug(pformat(context_block))
 
             return context_block
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format context block from Slack API data. Error: {e}. Returning default ContextBlock object."
+                "Failed to format context block from Slack API data.", exc_info=True
             )
             return ContextBlock(type="context", elements=[])
 
@@ -522,9 +546,9 @@ class ChannelHistoryExporter:
             logger.debug(pformat(rich_text_block))
 
             return rich_text_block
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format rich text block from Slack API data. Error: {e}. Returning default RichTextBlock object."
+                "Failed to format rich text block from Slack API data.", exc_info=True
             )
             return RichTextBlock(type="rich_text", elements=[])
 
@@ -557,9 +581,9 @@ class ChannelHistoryExporter:
             logger.debug(pformat(formatted_element))
 
             return formatted_element
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format element from Slack API data. Error: {e}. Returning default Element object."
+                "Failed to format element from Slack API data.", exc_info=True
             )
             return Element(type="unknown")
 
@@ -572,9 +596,9 @@ class ChannelHistoryExporter:
             return ButtonElement(
                 type="button", text=text, value=value, action_id=action_id
             )
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format button element from Slack API data. Error: {e}. Returning default ButtonElement object."
+                "Failed to format button element from Slack API data.", exc_info=True
             )
             return ButtonElement(type="button", text="Error", value="", action_id="")
 
@@ -584,9 +608,9 @@ class ChannelHistoryExporter:
             image_url = element["image_url"]
             alt_text = element["alt_text"]
             return ImageElement(type="image", image_url=image_url, alt_text=alt_text)
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format image element from Slack API data. Error: {e}. Returning default ImageElement object."
+                "Failed to format image element from Slack API data.", exc_info=True
             )
             return ImageElement(type="image", image_url="", alt_text="Error")
 
@@ -606,9 +630,10 @@ class ChannelHistoryExporter:
                 options=options,
                 action_id=action_id,
             )
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format static select element from Slack API data. Error: {e}. Returning default StaticSelectElement object."
+                "Failed to format static select element from Slack API data.",
+                exc_info=True,
             )
             return StaticSelectElement(
                 type="static_select", placeholder="Error", options=[], action_id=""
@@ -620,9 +645,9 @@ class ChannelHistoryExporter:
             text = option["text"]["text"]
             value = option["value"]
             return SelectOption(text=text, value=value)
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format select option from Slack API data. Error: {e}. Returning default SelectOption object."
+                "Failed to format select option from Slack API data.", exc_info=True
             )
             return SelectOption(text="Error", value="")
 
@@ -662,9 +687,9 @@ class ChannelHistoryExporter:
                 return RichTextElement(
                     type=element_type
                 )  # Fallback for unsupported types
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format rich text element from Slack API data. Error: {e}. Returning default RichTextElement object."
+                "Failed to format rich text element from Slack API data.", exc_info=True
             )
             return RichTextElement(type="unknown")
 
@@ -684,9 +709,10 @@ class ChannelHistoryExporter:
             return RichTextSectionElement(
                 type="rich_text_section", elements=elements, style=style
             )
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format rich text section element from Slack API data. Error: {e}. Returning default RichTextSectionElement object."
+                "Failed to format rich text section element from Slack API data.",
+                exc_info=True,
             )
             return RichTextSectionElement(
                 type="rich_text_section", elements=[], style=None
@@ -713,9 +739,10 @@ class ChannelHistoryExporter:
                 offset=offset,
                 border=border,
             )
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format rich text list element from Slack API data. Error: {e}. Returning default RichTextListElement object."
+                "Failed to format rich text list element from Slack API data.",
+                exc_info=True,
             )
             return RichTextListElement(
                 type="rich_text_list",
@@ -738,9 +765,10 @@ class ChannelHistoryExporter:
             return RichTextPreformattedElement(
                 type="rich_text_preformatted", text=text, border=border
             )
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format rich text preformatted element from Slack API data. Error: {e}. Returning default RichTextPreformattedElement object."
+                "Failed to format rich text preformatted element from Slack API data.",
+                exc_info=True,
             )
             return RichTextPreformattedElement(
                 type="rich_text_preformatted", text="Error", border=None
@@ -758,9 +786,10 @@ class ChannelHistoryExporter:
             return RichTextQuoteElement(
                 type="rich_text_quote", text=text, border=border
             )
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format rich text quote element from Slack API data. Error: {e}. Returning default RichTextQuoteElement object."
+                "Failed to format rich text quote element from Slack API data.",
+                exc_info=True,
             )
             return RichTextQuoteElement(
                 type="rich_text_quote", text="Error", border=None
@@ -796,9 +825,10 @@ class ChannelHistoryExporter:
                 else None
             )
             return RichTextTextElement(type="text", text=text, style=style)
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format rich text text element from Slack API data. Error: {e}. Returning default RichTextTextElement object."
+                "Failed to format rich text text element from Slack API data.",
+                exc_info=True,
             )
             return RichTextTextElement(type="text", text="Error", style=None)
 
@@ -816,9 +846,10 @@ class ChannelHistoryExporter:
             return RichTextChannelElement(
                 type="channel", channel_id=channel_id, style=style
             )
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format rich text channel element from Slack API data. Error: {e}. Returning default RichTextChannelElement object."
+                "Failed to format rich text channel element from Slack API data.",
+                exc_info=True,
             )
             return RichTextChannelElement(
                 type="channel", channel_id="Error", style=None
@@ -836,9 +867,10 @@ class ChannelHistoryExporter:
                 else None
             )
             return RichTextUserElement(type="user", user_id=user_id, style=style)
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format rich text user element from Slack API data. Error: {e}. Returning default RichTextUserElement object."
+                "Failed to format rich text user element from Slack API data.",
+                exc_info=True,
             )
             return RichTextUserElement(type="user", user_id="Error", style=None)
 
@@ -856,9 +888,10 @@ class ChannelHistoryExporter:
             return RichTextUserGroupElement(
                 type="user_group", user_group_id=user_group_id, style=style
             )
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format rich text user group element from Slack API data. Error: {e}. Returning default RichTextUserGroupElement object."
+                "Failed to format rich text user group element from Slack API data.",
+                exc_info=True,
             )
             return RichTextUserGroupElement(
                 type="user_group", user_group_id="Error", style=None
@@ -871,9 +904,10 @@ class ChannelHistoryExporter:
         try:
             emoji_name = element["name"]
             return RichTextEmojiElement(type="emoji", emoji_name=emoji_name)
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format rich text emoji element from Slack API data. Error: {e}. Returning default RichTextEmojiElement object."
+                "Failed to format rich text emoji element from Slack API data.",
+                exc_info=True,
             )
             return RichTextEmojiElement(type="emoji", emoji_name="Error")
 
@@ -894,9 +928,10 @@ class ChannelHistoryExporter:
                 else None
             )
             return RichTextLinkElement(type="link", text=text, url=url, style=style)
-        except Exception as e:
+        except Exception:
             logger.warning(
-                f"Failed to format rich text link element from Slack API data. Error: {e}. Returning default RichTextLinkElement object."
+                "Failed to format rich text link element from Slack API data.",
+                exc_info=True,
             )
             return RichTextLinkElement(
                 type="link", text="Error", url="Error", style=None

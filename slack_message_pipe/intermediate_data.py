@@ -16,6 +16,11 @@ class User:
 
     id: str
     name: str
+    real_name: str
+    is_bot: bool
+
+
+UNKNOWN_USER = User(id="no-id", name="unknown", real_name="Unknown User", is_bot=False)
 
 
 @dataclass
@@ -40,29 +45,14 @@ class File:
     """Represents a file shared in a Slack message, with metadata and optional preview."""
 
     id: str
-    url: str
-    name: str
+    url: Optional[str]
+    name: Optional[str]
     filetype: str
     title: Optional[str] = None
     preview: Optional[str] = None
     mimetype: Optional[str] = None
     size: Optional[int] = None
     timestamp: Optional[datetime.datetime] = None
-
-
-@dataclass
-class Attachment:
-    """Represents an attachment to a Slack message, which may include text, fields, and other elements."""
-
-    fallback: str
-    markdown: str
-    pretext: Optional[str] = None
-    title: Optional[str] = None
-    title_link: Optional[str] = None
-    author_name: Optional[str] = None
-    footer: Optional[str] = None
-    image_url: Optional[str] = None
-    color: Optional[str] = None
 
 
 @dataclass
@@ -125,7 +115,20 @@ class ImageBlock(Block):
     title: Optional[Composition] = None
 
 
-# Define other specific block types as needed...
+@dataclass
+class Attachment:
+    """Represents an attachment to a Slack message, which may include text, fields, and other elements."""
+
+    fallback: str
+    markdown: str
+    pretext: Optional[str] = None
+    title: Optional[str] = None
+    title_link: Optional[str] = None
+    author_name: Optional[str] = None
+    footer: Optional[str] = None
+    image_url: Optional[str] = None
+    color: Optional[str] = None
+    blocks: list[Block] = field(default_factory=list)  # Blocks of rich layout
 
 
 @dataclass

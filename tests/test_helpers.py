@@ -32,15 +32,6 @@ class TestLocaleHelper(unittest.TestCase):
         self.assertEqual(locale_helper.locale, my_locale)
         self.assertEqual(locale_helper.timezone, my_tz)
 
-    def test_should_use_locale_and_timezone_from_slack(self):
-        # given
-        author_info = {"locale": "es-MX", "tz": "Asia/Bangkok"}
-        # when
-        locale_helper = LocaleHelper(author_info=author_info)
-        # then
-        self.assertEqual(locale_helper.locale, babel.Locale.parse("es-MX", sep="-"))
-        self.assertEqual(locale_helper.timezone, zoneinfo.ZoneInfo("Asia/Bangkok"))
-
     def test_should_use_fallback_timezone_if_none_can_be_determined(self):
         # when
         with patch("slack_message_pipe.locales.get_localzone") as mock_get_localzone:

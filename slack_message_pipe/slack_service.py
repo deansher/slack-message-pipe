@@ -8,6 +8,7 @@
 import datetime
 import logging
 import time
+from dataclasses import dataclass
 from pprint import pformat
 from typing import Optional, TypedDict, cast
 
@@ -49,6 +50,14 @@ class SlackMessage(TypedDict, total=False):
     mrkdwn: bool
 
 
+@dataclass
+class SlackUser:
+    id: str
+    name: str
+    real_name: str
+    is_bot: bool
+
+
 class SlackService:
     """Service layer between main app and Slack API"""
 
@@ -72,42 +81,23 @@ class SlackService:
         self._locale = locale_helper.locale
         self._workspace_info = self._fetch_workspace_info()
         logger.info("Current Slack workspace: %s", self.team)
-        self._user_names = self.fetch_user_names()
+        self._user_data = self.fetch_user_data()
 
-        if "user_id" in self._workspace_info:
-            author_id = self._workspace_info["user_id"]
-            self._author = self._user_names.get(author_id, f"unknown_user_{author_id}")
-        else:
-            author_id = None
-            self._author = "unknown user"
-
-        logger.info("Current Slack user: %s", self.author)
         self._channel_names = self._fetch_channel_names()
         self._usergroup_names = self._fetch_usergroup_names()
-
-        self._author_info = self._fetch_user_info(author_id) if author_id else {}
-
-    @property
-    def author(self) -> str:
-        """Return the author."""
-        return self._author
 
     @property
     def team(self) -> str:
         """Return the team name."""
         return self._workspace_info.get("team", "")
 
-    def author_info(self) -> dict:
-        """Return author information."""
-        return self._author_info
-
     def channel_names(self) -> dict[str, str]:
         """Return channel names."""
         return self._channel_names
 
-    def user_names(self) -> dict[str, str]:
-        """Return user names."""
-        return self._user_names
+    def user_data(self) -> dict[str, SlackUser]:
+        """Return a dictionary from user id to SlackUser."""
+        return self._user_data
 
     def usergroup_names(self) -> dict[str, str]:
         """Return usergroup names."""
@@ -129,13 +119,21 @@ class SlackService:
                 + pformat(response)
             )
 
-    def fetch_user_names(self) -> dict[str, str]:
-        """Fetch and return a dictionary mapping user IDs to user names."""
-        user_names_raw = self._fetch_pages(
+    def fetch_user_data(self) -> dict[str, SlackUser]:
+        """Fetch and return a dictionary mapping user IDs to SlackUser instances."""
+        user_data_raw = self._fetch_pages(
             "users_list", key="members", items_name="users"
         )
-        user_names = self._reduce_to_dict(user_names_raw, "id", "real_name", "name")
-        return {user: name for user, name in user_names.items()}
+        user_data = {}
+        for user in user_data_raw:
+            slack_user = SlackUser(
+                id=user["id"],
+                name=user["name"],
+                real_name=user.get("real_name", ""),  # Using .get() for safety
+                is_bot=user.get("is_bot", False),  # Defaulting to False if absent
+            )
+            user_data[user["id"]] = slack_user
+        return user_data
 
     def _fetch_user_info(self, user_id: str) -> dict:
         """Fetch and return information for a given user ID, including locale."""
@@ -387,7 +385,7 @@ class SlackService:
                 if e.response.headers.get("Retry-After"):
                     wait_time = int(e.response.headers["Retry-After"])
                     logger.warning(
-                        f"Rate limit hit after {self._api_calls_since_last_rate_limit_error} successful calls. " 
+                        f"Rate limit hit after {self._api_calls_since_last_rate_limit_error} successful calls. "
                         f"Exception was {e}. Retrying in {wait_time} seconds..."
                     )
                     time.sleep(wait_time)

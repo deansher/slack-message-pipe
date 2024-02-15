@@ -26,7 +26,6 @@ class LocaleHelper:
         self,
         my_locale: Optional[Locale] = None,
         my_tz: Optional[zoneinfo.ZoneInfo] = None,
-        author_info: Optional[dict] = None,
     ) -> None:
         """
         Args:
@@ -35,8 +34,8 @@ class LocaleHelper:
         - author_info: locale and timezone to use from this Slack response
         if my_locale and/or my_tz are not given
         """
-        self._locale = self._determine_locale(my_locale, author_info)
-        self._timezone = self._determine_timezone(my_tz, author_info)
+        self._locale = self._determine_locale(my_locale)
+        self._timezone = self._determine_timezone(my_tz)
 
     @staticmethod
     def _determine_locale(
@@ -56,28 +55,27 @@ class LocaleHelper:
 
         try:
             return Locale.default()
-        except Exception:  # pylint: disable = broad-exception-caught
+        except Exception:
             return Locale.parse(settings.FALLBACK_LOCALE, sep="-")
 
     @staticmethod
     def _determine_timezone(
-        my_tz: Optional[zoneinfo.ZoneInfo] = None, author_info: Optional[dict] = None
+        my_tz: Optional[zoneinfo.ZoneInfo] = None,
     ) -> zoneinfo.ZoneInfo:
+        if my_tz is None:
+            local_tz = get_localzone()
+            # We use a runtime assertion because of changes in get_localzone() across versions,
+            # and because we've experienced mypy confusion about it.
+            if local_tz:
+                assert isinstance(
+                    local_tz, zoneinfo.ZoneInfo
+                ), f"get_localzone() must return a ZoneInfo object, got {type(local_tz)}"
+                return local_tz
         if my_tz:
             if not isinstance(my_tz, zoneinfo.ZoneInfo):
                 raise TypeError("my_tz must be of type zoneinfo.ZoneInfo")
-        else:
-            if author_info:
-                try:
-                    my_tz = zoneinfo.ZoneInfo(author_info["tz"])
-                except zoneinfo.ZoneInfoNotFoundError:
-                    logger.warning("Could not use timezone info from Slack")
-                    my_tz = get_localzone()
-            else:
-                my_tz = get_localzone()
-        if not my_tz:
-            my_tz = zoneinfo.ZoneInfo("UTC")
-        return my_tz
+            return my_tz
+        return zoneinfo.ZoneInfo("UTC")
 
     @property
     def locale(self) -> Locale:

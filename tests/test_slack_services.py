@@ -39,44 +39,6 @@ class TestReduceToDict(NoSocketsTestCase):
 
 @patch(MODULE_NAME + ".slack_sdk")
 class TestSlackService(NoSocketsTestCase):
-    def test_should_return_all_user_names_1(self, mock_slack):
-        # given
-        mock_slack.WebClient.return_value = SlackClientStub(team="T12345678")
-        slack_service = SlackService("TEST")
-        # when
-        result = slack_service.fetch_user_names()
-        # then
-        self.assertDictEqual(
-            {
-                "U12345678": "Naoko Kobayashi",
-                "U62345678": "Janet Hakuli",
-                "U72345678": "Yuna Kobayashi",
-                "U92345678": "Rosie Dunbar",
-                "U9234567X": "Erik Kalkoken",
-            },
-            result,
-        )
-
-    def test_should_return_all_user_names_2(self, mock_slack):
-        # given
-        mock_slack.WebClient.return_value = SlackClientStub(
-            team="T12345678", page_size=2
-        )
-        slack_service = SlackService("TOKEN_DUMMY")
-        # when
-        result = slack_service.fetch_user_names()
-        # then
-        self.assertDictEqual(
-            {
-                "U12345678": "Naoko Kobayashi",
-                "U62345678": "Janet Hakuli",
-                "U72345678": "Yuna Kobayashi",
-                "U92345678": "Rosie Dunbar",
-                "U9234567X": "Erik Kalkoken",
-            },
-            result,
-        )
-
     def test_should_return_all_conversations_1(self, mock_slack):
         # given
         mock_slack.WebClient.return_value = SlackClientStub(team="T12345678")
