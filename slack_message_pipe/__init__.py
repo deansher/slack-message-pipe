@@ -5,4 +5,4 @@
 # Copyright (c) 2019 Erik Kalkoken
 # Copyright (c) 2024 Dean Thompson
 
-__version__ = "0.0.5"
+__version__ = "0.0.6"
